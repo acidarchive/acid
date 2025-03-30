@@ -13,7 +13,7 @@ use sqlx::{postgres::PgPoolOptions, PgPool};
 use std::net::TcpListener;
 use tracing_actix_web::TracingLogger;
 use utoipa::OpenApi;
-use utoipa_rapidoc::RapiDoc;
+use utoipa_redoc::{Redoc, Servable};
 
 pub struct Application {
     port: u16,
@@ -134,8 +134,7 @@ async fn run(
                 ),
             )
             .service(
-                RapiDoc::with_openapi("/api-docs/openapi.json", ApiDoc::openapi())
-                    .path("/docs/api"),
+                Redoc::with_url("/docs/api", ApiDoc::openapi())
             )
             .route("/health_check", web::get().to(health_check))
             .app_data(db_pool.clone())
