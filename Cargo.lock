@@ -38,7 +38,7 @@ dependencies = [
  "tracing-subscriber",
  "unicode-segmentation",
  "utoipa",
- "utoipa-rapidoc",
+ "utoipa-redoc",
  "uuid",
  "validator",
  "wiremock",
@@ -3487,10 +3487,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "utoipa-rapidoc"
-version = "5.0.0"
+name = "utoipa-redoc"
+version = "6.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f5e784e313457e79d65c378bdfc2f74275f0db91a72252be7d34360ec2afbe1"
+checksum = "6427547f6db7ec006cbbef95f7565952a16f362e298b416d2d497d9706fef72d"
 dependencies = [
  "actix-web",
  "serde",
