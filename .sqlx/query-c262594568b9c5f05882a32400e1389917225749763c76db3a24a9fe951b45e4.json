@@ -1,0 +1,80 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT author, title, description, waveform, triplets, bpm, cut_off_freq, resonance, env_mod, decay, accent FROM patterns_tb303",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "author",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "waveform",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "triplets",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 5,
+        "name": "bpm",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "cut_off_freq",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "resonance",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "env_mod",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "decay",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "accent",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "c262594568b9c5f05882a32400e1389917225749763c76db3a24a9fe951b45e4"
+}
