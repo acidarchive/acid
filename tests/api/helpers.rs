@@ -81,6 +81,15 @@ pub struct TestApp {
 }
 
 impl TestApp {
+    pub async fn post_patterns_tb303(&self, body: String) -> reqwest::Response {
+        self.api_client
+            .post(&format!("{}/api/v1/patterns/tb303", &self.address))
+            .header("Content-Type", "application/json")
+            .body(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
     pub async fn post_activate_resend(&self, body: String) -> reqwest::Response {
         self.api_client
             .post(&format!(

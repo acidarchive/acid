@@ -1,12 +1,13 @@
+use crate::authentication::reject_anonymous_users;
 use crate::configuration::{DatabaseSettings, Settings};
 use crate::email_client::EmailClient;
-use crate::routes::{auth, health_check};
+use crate::routes::{auth, health_check, patterns};
 
 use crate::utils::get_error_response;
 use actix_session::{storage::RedisSessionStore, SessionMiddleware};
 use actix_web::{
-    cookie::Key, dev::Server, error, error::JsonPayloadError, web, web::Data, web::JsonConfig, App,
-    HttpResponse, HttpServer,
+    cookie::Key, dev::Server, error, error::JsonPayloadError, middleware::from_fn, web, web::Data,
+    web::JsonConfig, App, HttpResponse, HttpServer,
 };
 use secrecy::{ExposeSecret, Secret};
 use sqlx::{postgres::PgPoolOptions, PgPool};
@@ -85,6 +86,7 @@ async fn run(
             auth::signup_activate,
             auth::signup_activate_resend,
             auth::change_password,
+            patterns::create_tb303_pattern,
         ),
         components(schemas(
             auth::ChangePasswordRequest,
@@ -97,6 +99,8 @@ async fn run(
             auth::SignupActivateResponse,
             auth::SignupRequest,
             auth::SignupResponse,
+            patterns::PatternTB303Request,
+            patterns::PatternTB303Response,
         ))
     )]
     struct ApiDoc;
@@ -117,25 +121,29 @@ async fn run(
             ))
             .wrap(TracingLogger::default())
             .service(
-                web::scope("/api/v1").service(
-                    web::scope("/auth")
-                        .route("/login", web::post().to(auth::login))
-                        .route("/signup", web::post().to(auth::signup))
-                        .route("/signup/activate", web::get().to(auth::signup_activate))
-                        .route(
-                            "/signup/activate/resend",
-                            web::post().to(auth::signup_activate_resend),
-                        )
-                        .route(
-                            "/change_password/request",
-                            web::post().to(auth::request_password_reset),
-                        )
-                        .route("/change_password", web::post().to(auth::change_password)),
-                ),
+                web::scope("/api/v1")
+                    .service(
+                        web::scope("/auth")
+                            .route("/login", web::post().to(auth::login))
+                            .route("/signup", web::post().to(auth::signup))
+                            .route("/signup/activate", web::get().to(auth::signup_activate))
+                            .route(
+                                "/signup/activate/resend",
+                                web::post().to(auth::signup_activate_resend),
+                            )
+                            .route(
+                                "/change_password/request",
+                                web::post().to(auth::request_password_reset),
+                            )
+                            .route("/change_password", web::post().to(auth::change_password)),
+                    )
+                    .service(
+                        web::scope("/patterns")
+                            .route("/tb303", web::post().to(patterns::create_tb303_pattern))
+                            .wrap(from_fn(reject_anonymous_users)),
+                    ),
             )
-            .service(
-                Redoc::with_url("/docs/api", ApiDoc::openapi())
-            )
+            .service(Redoc::with_url("/docs/api", ApiDoc::openapi()))
             .route("/health_check", web::get().to(health_check))
             .app_data(db_pool.clone())
             .app_data(email_client.clone())
