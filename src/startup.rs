@@ -1,12 +1,10 @@
-use crate::authentication::reject_anonymous_users;
+use crate::authentication::reject_unauthorized_users;
 use crate::configuration::{DatabaseSettings, Settings};
-use crate::email_client::EmailClient;
-use crate::routes::{auth, health_check, patterns};
-
+use crate::routes::{health_check, patterns};
 use crate::utils::get_error_response;
-use actix_session::{storage::RedisSessionStore, SessionMiddleware};
+use actix_cors::Cors;
 use actix_web::{
-    cookie::Key, dev::Server, error, error::JsonPayloadError, middleware::from_fn, web, web::Data,
+    dev::Server, error, error::JsonPayloadError, middleware::from_fn, web, web::Data,
     web::JsonConfig, App, HttpResponse, HttpServer,
 };
 use secrecy::{ExposeSecret, Secret};
@@ -24,16 +22,6 @@ pub struct Application {
 impl Application {
     pub async fn build(configuration: Settings) -> Result<Self, anyhow::Error> {
         let connection_pool = get_connection_pool(&configuration.database);
-        let sender_email = configuration
-            .email_client
-            .sender()
-            .expect("Invalid sender email address.");
-        let email_client = EmailClient::new(
-            configuration.email_client.base_url,
-            sender_email,
-            configuration.email_client.api_key,
-            configuration.email_client.api_token,
-        );
 
         let address = format!(
             "{}:{}",
@@ -44,10 +32,9 @@ impl Application {
         let server = run(
             listener,
             connection_pool,
-            email_client,
             configuration.application.base_url,
             configuration.application.hmac_secret,
-            configuration.redis_uri,
+            configuration.cognito,
         )
         .await?;
 
@@ -72,82 +59,43 @@ pub struct ApplicationBaseUrl(pub String);
 async fn run(
     listener: TcpListener,
     db_pool: PgPool,
-    email_client: EmailClient,
     base_url: String,
     hmac_secret: Secret<String>,
-    redis_uri: Secret<String>,
+    cognito_settings: crate::configuration::CognitoSettings,
 ) -> Result<Server, anyhow::Error> {
     #[derive(OpenApi)]
     #[openapi(
-        paths(
-            auth::login,
-            auth::request_password_reset,
-            auth::signup,
-            auth::signup_activate,
-            auth::signup_activate_resend,
-            auth::change_password,
-            patterns::create_tb303_pattern,
-        ),
-        components(schemas(
-            auth::ChangePasswordRequest,
-            auth::ChangePasswordResponse,
-            auth::LoginRequest,
-            auth::LoginResponse,
-            auth::LoginErrorResponse,
-            auth::PasswordResetRequest,
-            auth::PasswordResetResponse,
-            auth::SignupActivateResponse,
-            auth::SignupRequest,
-            auth::SignupResponse,
-            patterns::PatternTB303Request,
-            patterns::PatternTB303Response,
-        ))
+        paths(patterns::create_tb303_pattern,),
+        components(schemas(patterns::PatternTB303Request, patterns::PatternTB303Response,))
     )]
     struct ApiDoc;
 
     let db_pool = Data::new(db_pool);
-    let email_client = Data::new(email_client);
     let base_url = Data::new(ApplicationBaseUrl(base_url));
-
-    let secret_key = Key::from(hmac_secret.expose_secret().as_bytes());
-
-    let redis_store = RedisSessionStore::new(redis_uri.expose_secret()).await?;
+    let cognito_settings = Data::new(cognito_settings);
 
     let server = HttpServer::new(move || {
+        let cors = Cors::default()
+            .allow_any_origin()
+            .allow_any_method()
+            .allow_any_header()
+            .max_age(3600);
+
         App::new()
-            .wrap(SessionMiddleware::new(
-                redis_store.clone(),
-                secret_key.clone(),
-            ))
+            .wrap(cors)
             .wrap(TracingLogger::default())
             .service(
-                web::scope("/api/v1")
-                    .service(
-                        web::scope("/auth")
-                            .route("/login", web::post().to(auth::login))
-                            .route("/signup", web::post().to(auth::signup))
-                            .route("/signup/activate", web::get().to(auth::signup_activate))
-                            .route(
-                                "/signup/activate/resend",
-                                web::post().to(auth::signup_activate_resend),
-                            )
-                            .route(
-                                "/change_password/request",
-                                web::post().to(auth::request_password_reset),
-                            )
-                            .route("/change_password", web::post().to(auth::change_password)),
-                    )
-                    .service(
-                        web::scope("/patterns")
-                            .route("/tb303", web::post().to(patterns::create_tb303_pattern))
-                            .wrap(from_fn(reject_anonymous_users)),
-                    ),
+                web::scope("/api/v1").service(
+                    web::scope("/patterns")
+                        .route("/tb303", web::post().to(patterns::create_tb303_pattern))
+                        .wrap(from_fn(reject_unauthorized_users)),
+                ),
             )
             .service(Redoc::with_url("/docs/api", ApiDoc::openapi()))
             .route("/health_check", web::get().to(health_check))
             .app_data(db_pool.clone())
-            .app_data(email_client.clone())
             .app_data(base_url.clone())
+            .app_data(cognito_settings.clone())
             .app_data(ApiError::json_error(JsonConfig::default()))
             .app_data(Data::new(HmacSecret(hmac_secret.expose_secret().clone())))
     })

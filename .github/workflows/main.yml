@@ -12,6 +12,11 @@ env:
   APP_USER: app
   APP_USER_PWD: secret
   APP_DB_NAME: acidarchive
+  APP_COGNITO__REGION: ${{ secrets.APP_COGNITO__REGION }}
+  APP_COGNITO__USER_POOL_ID: ${{ secrets.APP_COGNITO__USER_POOL_ID }}
+  APP_COGNITO__USER_POOL_CLIENT_ID: ${{ secrets.APP_COGNITO__USER_POOL_CLIENT_ID }}
+  APP_COGNITO__TEST_USER__USERNAME: ${{ secrets.APP_COGNITO__TEST_USER__USERNAME }}
+  APP_COGNITO__TEST_USER__PASSWORD: ${{ secrets.APP_COGNITO__TEST_USER__PASSWORD }}
 
 jobs:
   test:
@@ -26,10 +31,6 @@ jobs:
           POSTGRES_DB: postgres
         ports:
           - 5432:5432
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
@@ -106,10 +107,6 @@ jobs:
           POSTGRES_DB: postgres
         ports:
           - 5432:5432
-      redis:
-        image: redis:7
-        ports:
-          - 6379:6379
     steps:
       - uses: actions/checkout@v4
       - name: Install the Rust toolchain

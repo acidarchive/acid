@@ -1,5 +1,6 @@
 use crate::helpers::spawn_app;
 use crate::test_data::get_valid_tb303_pattern_data;
+
 #[tokio::test]
 async fn post_pattern_tb303_returns_401_for_unauthorized_requests() {
     // Arrange
@@ -7,7 +8,7 @@ async fn post_pattern_tb303_returns_401_for_unauthorized_requests() {
     let body = get_valid_tb303_pattern_data();
 
     // Act
-    let response = app.post_patterns_tb303(body.into()).await;
+    let response = app.post_patterns_tb303(body.into(), None).await;
 
     // Assert
     assert_eq!(401, response.status().as_u16());
@@ -19,17 +20,9 @@ async fn post_pattern_tb303_persists_the_new_pattern() {
     let app = spawn_app().await;
     let body = get_valid_tb303_pattern_data();
 
-    // Act
-    app.post_login(
-        serde_json::json!({
-            "username": &app.test_user.username,
-            "password": &app.test_user.password
-        })
-        .to_string(),
-    )
-    .await;
+    let token = Some(app.get_test_user_token().await);
 
-    let response = app.post_patterns_tb303(body.into()).await;
+    let response = app.post_patterns_tb303(body.into(), token).await;
 
     // Assert
     assert_eq!(200, response.status().as_u16());
@@ -98,14 +91,6 @@ async fn post_pattern_tb303_returns_400_for_invalid_data() {
     let app = spawn_app().await;
 
     // Act
-    app.post_login(
-        serde_json::json!({
-            "username": &app.test_user.username,
-            "password": &app.test_user.password
-        })
-        .to_string(),
-    )
-    .await;
     let test_cases = vec![
         (
             r#"{
@@ -290,9 +275,13 @@ async fn post_pattern_tb303_returns_400_for_invalid_data() {
         ),
     ];
 
+    let token = Some(app.get_test_user_token().await);
+
     for (invalid_body, error_message) in test_cases {
         // Act
-        let response = app.post_patterns_tb303(invalid_body.into()).await;
+        let response = app
+            .post_patterns_tb303(invalid_body.into(), token.clone())
+            .await;
 
         // Assert
         assert_eq!(
@@ -309,7 +298,7 @@ async fn post_pattern_tb303_fails_if_there_is_a_fatal_database_error() {
     // Arrange
     let app = spawn_app().await;
 
-    // destroy the  database
+    // destroy the database
     sqlx::query!("DROP TABLE steps_tb303",)
         .execute(&app.db_pool)
         .await
@@ -317,17 +306,10 @@ async fn post_pattern_tb303_fails_if_there_is_a_fatal_database_error() {
 
     let body = get_valid_tb303_pattern_data();
 
-    // Act
-    app.post_login(
-        serde_json::json!({
-            "username": &app.test_user.username,
-            "password": &app.test_user.password
-        })
-        .to_string(),
-    )
-    .await;
+    let token = Some(app.get_test_user_token().await);
 
-    let response = app.post_patterns_tb303(body.into()).await;
+    // Act
+    let response = app.post_patterns_tb303(body.into(), token).await;
 
     // assert
     assert_eq!(response.status().as_u16(), 500);

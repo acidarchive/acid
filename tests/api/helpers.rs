@@ -1,14 +1,13 @@
-use acid::configuration::{get_configuration, DatabaseSettings};
+use acid::configuration::{get_configuration, CognitoSettings, DatabaseSettings};
 use acid::startup::{get_connection_pool, Application};
 use acid::telemetry::{get_subscriber, init_subscriber};
-use argon2::{password_hash::SaltString, Algorithm, Argon2, Params, PasswordHasher, Version};
-use chrono::Utc;
+use dotenvy::dotenv;
 use once_cell::sync::Lazy;
-use secrecy::Secret;
-use serde_json::json;
+use reqwest::Client;
+use secrecy::{ExposeSecret, Secret};
+use serde::{Deserialize, Serialize};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
-use wiremock::MockServer;
 
 // Ensure that the `tracing` stack is only initialised once using `once_cell`
 static TRACING: Lazy<()> = Lazy::new(|| {
@@ -24,193 +23,123 @@ static TRACING: Lazy<()> = Lazy::new(|| {
     };
 });
 
-pub struct TestUser {
-    pub user_id: Uuid,
-    pub username: String,
-    pub email: String,
-    pub status: String,
-    pub password: String,
+#[derive(Serialize)]
+#[serde(rename_all = "PascalCase")]
+struct CognitoAuthRequest {
+    auth_parameters: std::collections::HashMap<String, String>,
+    auth_flow: String,
+    client_id: String,
 }
 
-impl TestUser {
-    pub fn generate() -> Self {
-        Self {
-            user_id: Uuid::new_v4(),
-            username: Uuid::new_v4().to_string(),
-            email: Uuid::new_v4().to_string(),
-            status: "active".to_string(),
-            password: Uuid::new_v4().to_string(),
-        }
-    }
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
+pub struct CognitoAuthResponse {
+    authentication_result: Option<AuthenticationResult>,
+}
 
-    async fn store(&self, pool: &PgPool) {
-        let salt = SaltString::generate(&mut rand::thread_rng());
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "PascalCase")]
+pub struct AuthenticationResult {
+    pub id_token: String,
+}
 
-        let password_hash = Argon2::new(
-            Algorithm::Argon2id,
-            Version::V0x13,
-            Params::new(15000, 2, 1, None).unwrap(),
+pub async fn get_user_token(
+    username: &str,
+    password: &str,
+    client_id: &str,
+    cognito_region: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let mut auth_params = std::collections::HashMap::new();
+    auth_params.insert("USERNAME".to_string(), username.to_string());
+    auth_params.insert("PASSWORD".to_string(), password.to_string());
+
+    let body = CognitoAuthRequest {
+        auth_flow: "USER_PASSWORD_AUTH".to_string(),
+        auth_parameters: auth_params,
+        client_id: client_id.to_string(),
+    };
+
+    let url = format!("https://cognito-idp.{}.amazonaws.com/", cognito_region);
+
+    let client = Client::new();
+    let response = client
+        .post(&url)
+        .header(
+            "X-Amz-Target",
+            "AWSCognitoIdentityProviderService.InitiateAuth",
         )
-        .hash_password(self.password.as_bytes(), &salt)
-        .unwrap()
-        .to_string();
-
-        sqlx::query!(
-            "INSERT INTO users (user_id, username, email, status, password_hash, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6)",
-            self.user_id,
-            self.username,
-            self.email,
-            self.status,
-            password_hash,
-            Utc::now()
-        )
-        .execute(pool)
+        .header("Content-Type", "application/x-amz-json-1.1")
+        .json(&body)
+        .send()
         .await
-        .expect("Failed to store test user.");
+        .expect("Failed to send request to Cognito");
+
+    if !response.status().is_success() {
+        let error_text = response.text().await.unwrap_or_default();
+        return Err(format!("Failed to authenticate: {}", error_text).into());
     }
+
+    let auth_response: CognitoAuthResponse = response.json().await?;
+
+    auth_response
+        .authentication_result
+        .ok_or_else(|| "No authentication result returned".into())
+        .map(|result| result.id_token)
 }
 
 pub struct TestApp {
-    pub port: u16,
     pub address: String,
     pub db_pool: PgPool,
-    pub email_server: MockServer,
-    pub test_user: TestUser,
     pub api_client: reqwest::Client,
+    pub cognito: CognitoSettings,
 }
 
 impl TestApp {
-    pub async fn post_patterns_tb303(&self, body: String) -> reqwest::Response {
-        self.api_client
+    pub async fn post_patterns_tb303(
+        &self,
+        body: String,
+        token: Option<String>,
+    ) -> reqwest::Response {
+        let request = self
+            .api_client
             .post(&format!("{}/api/v1/patterns/tb303", &self.address))
-            .header("Content-Type", "application/json")
-            .body(body)
-            .send()
-            .await
-            .expect("Failed to execute request.")
-    }
-    pub async fn post_activate_resend(&self, body: String) -> reqwest::Response {
-        self.api_client
-            .post(&format!(
-                "{}/api/v1/auth/signup/activate/resend",
-                &self.address
-            ))
-            .header("Content-Type", "application/json")
-            .body(body)
-            .send()
-            .await
-            .expect("Failed to execute request.")
-    }
+            .header("Content-Type", "application/json");
 
-    pub async fn post_reset_password_request(&self, body: String) -> reqwest::Response {
-        self.api_client
-            .post(&format!(
-                "{}/api/v1/auth/change_password/request",
-                &self.address
-            ))
-            .header("Content-Type", "application/json")
-            .body(body)
-            .send()
-            .await
-            .expect("Failed to execute request.")
-    }
-
-    pub async fn post_change_password(&self, body: String) -> reqwest::Response {
-        self.api_client
-            .post(&format!("{}/api/v1/auth/change_password", &self.address))
-            .header("Content-Type", "application/json")
-            .body(body)
-            .send()
-            .await
-            .expect("Failed to execute request.")
-    }
-
-    pub fn get_activation_link(&self, email_request: &wiremock::Request) -> reqwest::Url {
-        let body: serde_json::Value = serde_json::from_slice(&email_request.body).unwrap();
-
-        let get_link = |s: &str| {
-            let links: Vec<_> = linkify::LinkFinder::new()
-                .links(s)
-                .filter(|l| *l.kind() == linkify::LinkKind::Url)
-                .collect();
-
-            assert_eq!(links.len(), 1);
-
-            let raw_link = links[0].as_str().to_owned();
-
-            let mut activation_link = reqwest::Url::parse(&raw_link).unwrap();
-
-            // Make sure we don't call random APIs on the web
-            assert_eq!(activation_link.host_str().unwrap(), "127.0.0.1");
-            activation_link.set_port(Some(self.port)).unwrap();
-            activation_link
+        let request = if let Some(token) = token {
+            request.header("Authorization", format!("Bearer {}", token))
+        } else {
+            request
         };
 
-        let data = json!(body);
-        let message = &data["Messages"][0];
-
-        let activation_link = get_link(&message["Variables"]["activation_link"].as_str().unwrap());
-
-        activation_link
+        request
+            .body(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
     }
 
-    pub fn get_reset_token(&self, email_request: &wiremock::Request) -> String {
-        let body: serde_json::Value = serde_json::from_slice(&email_request.body).unwrap();
-
-        let data = json!(body);
-
-        let message = &data["Messages"][0];
-
-        let password_reset_link = reqwest::Url::parse(
-            &message["Variables"]["password_reset_link"]
-                .as_str()
-                .unwrap(),
+    pub async fn get_test_user_token(&self) -> String {
+        get_user_token(
+            &self.cognito.test_user.username,
+            &self.cognito.test_user.password.expose_secret(),
+            &self.cognito.user_pool_client_id,
+            &self.cognito.region,
         )
-        .unwrap();
-
-        // Make sure we don't call random APIs on the web
-        assert_eq!(password_reset_link.host_str().unwrap(), "127.0.0.1");
-
-        let query = password_reset_link.query().unwrap();
-
-        let parts: Vec<&str> = query.split('=').collect();
-
-        parts[1].to_string()
-    }
-
-    pub async fn post_login(&self, body: String) -> reqwest::Response {
-        self.api_client
-            .post(&format!("{}/api/v1/auth/login", &self.address))
-            .header("Content-Type", "application/json")
-            .body(body)
-            .send()
-            .await
-            .expect("Failed to execute request.")
-    }
-
-    pub async fn post_signup(&self, body: String) -> reqwest::Response {
-        self.api_client
-            .post(&format!("{}/api/v1/auth/signup", &self.address))
-            .header("Content-Type", "application/json")
-            .body(body)
-            .send()
-            .await
-            .expect("Failed to execute request.")
+        .await
+        .expect("Failed to get test user token")
     }
 }
 
 pub async fn spawn_app() -> TestApp {
     Lazy::force(&TRACING);
 
-    let email_server = MockServer::start().await;
+    dotenv().ok();
 
     // randomize configuration to ensure test isolation
     let configuration = {
         let mut c = get_configuration().expect("Failed to read configuration.");
         c.database.database_name = Uuid::new_v4().to_string();
         c.application.port = 0;
-        c.email_client.base_url = email_server.uri();
         c
     };
 
@@ -230,13 +159,11 @@ pub async fn spawn_app() -> TestApp {
 
     let test_app = TestApp {
         address: format!("http://localhost:{}", application_port),
-        port: application_port,
         db_pool: get_connection_pool(&configuration.database),
-        email_server,
-        test_user: TestUser::generate(),
         api_client: client,
+        cognito: configuration.cognito,
     };
-    test_app.test_user.store(&test_app.db_pool).await;
+
     test_app
 }
 

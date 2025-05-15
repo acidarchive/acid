@@ -7,8 +7,4 @@ database:
   username: "postgres"
   password: "password"
   database_name: "acidarchive"
-email_client:
-  base_url: "localhost"
-  api_key: "CHANGE_ME"
-  api_token: "CHANGE_ME"
-redis_uri: "redis://127.0.0.1:6379"
+
