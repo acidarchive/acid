@@ -23,9 +23,6 @@ cp .env.example .env
 ./scripts/init_db.sh
 ```
 
-```bash
-./scripts/init_redis.sh
-```
 
 ## Build
 
@@ -53,10 +50,6 @@ cargo test
 To ensure that git pull always rebases by default, run the following command:
 ```bash
 git config --global pull.rebase true
-```
-
-```bash
-./scripts/setup_hooks.sh
 ```
 
 

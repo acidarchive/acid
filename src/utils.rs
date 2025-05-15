@@ -1,8 +1,3 @@
-use {
-    argon2::password_hash::SaltString,
-    argon2::{Algorithm, Argon2, Params, PasswordHasher, Version},
-};
-
 pub fn e500<T>(e: T) -> actix_web::Error
 where
     T: std::fmt::Debug + std::fmt::Display + 'static,
@@ -21,21 +16,6 @@ pub fn error_chain_fmt(
         current = cause.source();
     }
     Ok(())
-}
-
-pub fn make_password_hash(password: &str) -> String {
-    let salt = SaltString::generate(&mut rand::thread_rng());
-
-    let password_hash = Argon2::new(
-        Algorithm::Argon2id,
-        Version::V0x13,
-        Params::new(15000, 2, 1, None).unwrap(),
-    )
-    .hash_password(password.as_bytes(), &salt)
-    .unwrap()
-    .to_string();
-
-    password_hash
 }
 
 #[derive(serde::Serialize)]

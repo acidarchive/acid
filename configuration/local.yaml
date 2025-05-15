@@ -3,6 +3,10 @@ application:
   base_url: "http://127.0.0.1"
 database:
   require_ssl: false
-email_client:
-  base_url: "https://api.mailjet.com/v3.1"
-  sender_email: "info@acidarchive.com"
+cognito:
+  region: "CHANGE_ME"
+  user_pool_id: "CHANGE_ME"
+  user_pool_client_id: "CHANGE_ME"
+  test_user:
+    username: "testuser@example.com"
+    password: "Password123!"

@@ -1,18 +1,16 @@
-use crate::domain::UserEmail;
 use secrecy::{ExposeSecret, Secret};
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
 use std::convert::{TryFrom, TryInto};
 
-#[derive(serde::Deserialize, Clone)]
+#[derive(serde::Deserialize, Clone, Debug)]
 pub struct Settings {
     pub database: DatabaseSettings,
     pub application: ApplicationSettings,
-    pub email_client: EmailClientSettings,
-    pub redis_uri: Secret<String>,
+    pub cognito: CognitoSettings,
 }
 
-#[derive(serde::Deserialize, Clone)]
+#[derive(serde::Deserialize, Clone, Debug)]
 pub struct ApplicationSettings {
     #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
@@ -21,7 +19,7 @@ pub struct ApplicationSettings {
     pub hmac_secret: Secret<String>,
 }
 
-#[derive(serde::Deserialize, Clone)]
+#[derive(serde::Deserialize, Clone, Debug)]
 pub struct DatabaseSettings {
     pub username: String,
     pub password: Secret<String>,
@@ -30,6 +28,20 @@ pub struct DatabaseSettings {
     pub host: String,
     pub database_name: String,
     pub require_ssl: bool,
+}
+
+#[derive(serde::Deserialize, Clone, Debug)]
+pub struct CognitoSettings {
+    pub region: String,
+    pub user_pool_id: String,
+    pub user_pool_client_id: String,
+    pub test_user: CognitoTestUser,
+}
+
+#[derive(serde::Deserialize, Clone, Debug)]
+pub struct CognitoTestUser {
+    pub username: String,
+    pub password: Secret<String>,
 }
 
 impl DatabaseSettings {
@@ -46,20 +58,6 @@ impl DatabaseSettings {
             .port(self.port)
             .ssl_mode(ssl_mode)
             .database(&self.database_name)
-    }
-}
-
-#[derive(serde::Deserialize, Clone)]
-pub struct EmailClientSettings {
-    pub base_url: String,
-    pub sender_email: String,
-    pub api_key: String,
-    pub api_token: String,
-}
-
-impl EmailClientSettings {
-    pub fn sender(&self) -> Result<UserEmail, String> {
-        UserEmail::parse(self.sender_email.clone())
     }
 }
 
