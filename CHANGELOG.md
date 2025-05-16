@@ -1,4 +1,16 @@
 # 🎛️ Acid Archive Changelog
+## [0.0.1-alpha.5] - 2025-05-16
+
+### 🌀 Added
+
+- Add buildspec
+
+
+### 🔧 Fixed
+
+- Add prod db vars
+
+
 ## [0.0.1-alpha.4] - 2025-05-16
 
 ### ⚙️ Miscellaneous
@@ -31,7 +43,8 @@
 - Init
 
 
-[0.0.1-alpha.4]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.3..0.0.1-alpha.4
+[0.0.1-alpha.5]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.4..0.0.1-alpha.5
+[0.0.1-alpha.4]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.3..v0.0.1-alpha.4
 [0.0.1-alpha.3]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.2..v0.0.1-alpha.3
 [0.0.1-alpha.2]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.1..v0.0.1-alpha.2
 
