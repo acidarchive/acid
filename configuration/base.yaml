@@ -1,0 +1,15 @@
+application:
+  port: 8000
+database:
+  host: "localhost"
+  port: 5432
+  username: "postgres"
+  password: "password"
+  database_name: "acidarchive"
+cognito:
+  region: "CHANGE_ME"
+  user_pool_id: "CHANGE_ME"
+  user_pool_client_id: "CHANGE_ME"
+  test_user:
+    username: "CHANGE_ME"
+    password: "CHANGE_ME"

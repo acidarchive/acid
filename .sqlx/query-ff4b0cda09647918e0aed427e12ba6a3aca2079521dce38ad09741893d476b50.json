@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DROP TABLE steps_tb303",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "ff4b0cda09647918e0aed427e12ba6a3aca2079521dce38ad09741893d476b50"
+}

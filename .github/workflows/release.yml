@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    name: release
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Fetch all tags
+        run: git fetch --tags
+
+      - name: Fetch all tags
+        run: git fetch --tags
+
+      - name: Pull latest changes from main
+        run: git pull origin main
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+
+      - name: Cache cargo-release
+        id: cargo_release_cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/bin/cargo-release
+          key: cargo-release-v1
+          restore-keys: |
+            cargo-release-
+
+      - name: Cache git-cliff
+        id: git_cliff_cache
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/bin/git-cliff
+          key: git-cliff-v1
+          restore-keys: |
+            git-cliff-
+
+      - name: Install cargo-release (if not cached)
+        if: steps.cargo_release_cache.outputs.cache-hit != 'true'
+        run: cargo install cargo-release
+
+      - name: Install git-cliff (if not cached)
+        if: steps.git_cliff_cache.outputs.cache-hit != 'true'
+        run: cargo install git-cliff
+
+      - name: Configure git user
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Run cargo-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: cargo release alpha --execute --no-confirm

@@ -1,0 +1,56 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pattern_id, number, note, octave, time, accent, slide\n         FROM steps_tb303\n         WHERE pattern_id = (SELECT pattern_id FROM patterns_tb303 LIMIT 1)\n         ORDER BY number",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pattern_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "number",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "note",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "octave",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "time",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "accent",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "slide",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "4b56b2922e6208f14f25a289c49d0702276a191800b1a3a60ec32474e5efb554"
+}

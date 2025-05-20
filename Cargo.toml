@@ -1,0 +1,63 @@
+[package]
+name = "acid"
+version = "0.0.1-alpha.0"
+authors = ["acidarchive <dev@acidarchive.com>"]
+description = "API for acidarchive.com"
+license = "MIT"
+documentation = "https://acidarchive.com/docs"
+homepage = "https://acidarchive.com"
+repository = "https://github.com/acidarchive/acid"
+edition = "2021"
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+path = "src/main.rs"
+name = "api"
+
+[dependencies]
+actix-web = "4.9.0"
+actix-cors = { version = "0.7.1" }
+jsonwebtoken = "9.3.1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+serde = "1.0.215"
+config = { version = "0.14", default-features = false, features = ["yaml"] }
+once_cell = "1.20.3"
+sqlx = { version = "0.8.2", default-features = false, features = [
+    "runtime-tokio-rustls",
+    "macros",
+    "postgres",
+    "uuid",
+    "chrono",
+    "migrate",
+] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = "0.4"
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3", features = ["registry", "env-filter"] }
+tracing-log = "0.2"
+thiserror = "2.0"
+serde-aux = "4.7.0"
+unicode-segmentation = "1.7.1"
+tracing-actix-web = "0.7.14"
+tracing-bunyan-formatter = "0.3.10"
+anyhow = "1.0.98"
+serde_json = "1.0.73"
+secrecy = { version = "0.8", features = ["serde"] }
+utoipa = { version = "5", features = ["actix_extras", "chrono"] }
+utoipa-rapidoc = { version = "6.0.0", features = ["actix-web"] }
+dotenvy = { version = "0.15.7" }
+utoipa-swagger-ui = { version = "9.0", features = ["actix-web"] }
+
+
+[dependencies.reqwest]
+version = "0.12.9"
+default-features = false
+features = ["json", "rustls-tls", "cookies"]
+
+[dev-dependencies]
+once_cell = "1.20.2"
+claims = "0.8"
+serde_json = "1.0.61"
+
