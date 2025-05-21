@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT pattern_id\n        FROM patterns_tb303\n        ORDER BY RANDOM()\n        LIMIT 1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pattern_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "1b0ae3911c5883d30d5c4779223cf8936670ca5ccb41df0e82f3ac3091e304c3"
+}

@@ -1,0 +1,106 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            pattern_id, user_id, author, title, description,\n            waveform, triplets, bpm, cut_off_freq, resonance,\n            env_mod, decay, accent, created_at, updated_at\n        FROM patterns_tb303\n        WHERE pattern_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pattern_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "author",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "waveform",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "triplets",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 7,
+        "name": "bpm",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "cut_off_freq",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "resonance",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "env_mod",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "decay",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 12,
+        "name": "accent",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 14,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "a39ed445fea1be64e6638cd5b1d390ef075e4b81ca3909b05475bbd6c87a1df2"
+}

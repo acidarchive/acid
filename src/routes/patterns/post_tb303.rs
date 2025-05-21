@@ -3,6 +3,7 @@ use crate::domain::{
     Author, Description, Knob, NewTB303Pattern, NewTB303Step, Note, Octave, StepNumber, Time,
     Title, Waveform, BPM,
 };
+use crate::routes::patterns::PatternErrorResponse;
 use crate::utils::error_chain_fmt;
 use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use anyhow::Context;
@@ -66,12 +67,6 @@ pub struct PatternTB303Response {
 pub struct PatternTB303ResponseData {
     #[schema(example = "123e4567-e89b-12d3-a456-426614174000")]
     id: String,
-}
-
-#[derive(serde::Serialize)]
-pub struct PatternErrorResponse {
-    status: String,
-    message: String,
 }
 
 #[derive(thiserror::Error)]
