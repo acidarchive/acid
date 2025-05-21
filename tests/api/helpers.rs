@@ -118,6 +118,14 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
+    pub async fn get_patterns_tb303_random(&self) -> reqwest::Response {
+        self.api_client
+            .get(&format!("{}/v1/patterns/tb303/random", &self.address))
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
     pub async fn get_test_user_token(&self) -> String {
         get_user_token(
             &self.cognito.test_user.username,

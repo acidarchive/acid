@@ -69,8 +69,15 @@ async fn run(
             .service(
                 web::scope("/v1").service(
                     web::scope("/patterns")
-                        .route("/tb303", web::post().to(patterns::create_tb303_pattern))
-                        .wrap(from_fn(reject_unauthorized_users)),
+                        .route(
+                            "/tb303/random",
+                            web::get().to(patterns::get_random_tb303_pattern),
+                        )
+                        .service(
+                            web::scope("")
+                                .wrap(from_fn(reject_unauthorized_users))
+                                .route("/tb303", web::post().to(patterns::create_tb303_pattern)),
+                        ),
                 ),
             )
             .service(RapiDoc::new("/api-docs/openapi.json").path("/docs"))

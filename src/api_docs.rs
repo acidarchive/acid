@@ -24,8 +24,9 @@ impl Modify for SecurityAddon {
 
 #[derive(OpenApi)]
 #[openapi(
-    paths(patterns::create_tb303_pattern,),
-    components(schemas(patterns::PatternTB303Request, patterns::PatternTB303Response,)),
+    paths(patterns::create_tb303_pattern, patterns::get_random_tb303_pattern),
+    components(schemas(patterns::PatternTB303Request, patterns::PatternTB303Response,
+        patterns::TB303StepData, patterns::TB303PatternData)),
     modifiers(&SecurityAddon)
 )]
 pub struct ApiDoc;
