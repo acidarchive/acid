@@ -199,5 +199,11 @@ async fn configure_database(config: &DatabaseSettings) -> PgPool {
         .run(&connection_pool)
         .await
         .expect("Failed to migrate the database");
+
+    sqlx::query!("TRUNCATE TABLE steps_tb303, patterns_tb303 RESTART IDENTITY CASCADE")
+        .execute(&connection_pool)
+        .await
+        .expect("Failed to clean test database");
+
     connection_pool
 }
