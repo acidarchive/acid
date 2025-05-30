@@ -4,7 +4,7 @@ use acid::telemetry::{get_subscriber, init_subscriber};
 use dotenvy::dotenv;
 use once_cell::sync::Lazy;
 use reqwest::Client;
-use secrecy::{ExposeSecret, Secret};
+use secrecy::Secret;
 use serde::{Deserialize, Serialize};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
@@ -126,15 +126,96 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
+    pub async fn get_patterns_tb303(
+        &self,
+        token: Option<String>,
+        page: Option<u32>,
+        page_size: Option<u32>,
+        sort_column: Option<&str>,
+        sort_direction: Option<&str>,
+        search: Option<&str>,
+        search_columns: Option<&str>,
+    ) -> reqwest::Response {
+        let mut url = format!("{}/v1/patterns/tb303", &self.address);
+        let mut query_params = vec![];
+
+        if let Some(p) = page {
+            query_params.push(format!("page={}", p));
+        }
+        if let Some(ps) = page_size {
+            query_params.push(format!("page_size={}", ps));
+        }
+        if let Some(sc) = sort_column {
+            query_params.push(format!("sort_column={}", sc));
+        }
+        if let Some(sd) = sort_direction {
+            query_params.push(format!("sort_direction={}", sd));
+        }
+        if let Some(s) = search {
+            query_params.push(format!("search={}", s));
+        }
+        if let Some(sc) = search_columns {
+            query_params.push(format!("search_columns={}", sc));
+        }
+
+        if !query_params.is_empty() {
+            url.push('?');
+            url.push_str(&query_params.join("&"));
+        }
+
+        let request = self.api_client.get(&url);
+
+        let request = if let Some(token) = token {
+            request.header("Authorization", format!("Bearer {}", token))
+        } else {
+            request
+        };
+
+        request.send().await.expect("Failed to execute request.")
+    }
+
     pub async fn get_test_user_token(&self) -> String {
         get_user_token(
-            &self.cognito.test_user.username,
-            &self.cognito.test_user.password.expose_secret(),
+            dotenvy::var("TEST_USER_USERNAME").unwrap().as_str(),
+            dotenvy::var("TEST_USER_PASSWORD").unwrap().as_str(),
             &self.cognito.user_pool_client_id,
             &self.cognito.region,
         )
         .await
         .expect("Failed to get test user token")
+    }
+
+    pub async fn get_test_user_id(&self) -> Uuid {
+        let user_id = dotenvy::var("TEST_USER_ID").unwrap();
+
+        Uuid::parse_str(user_id.as_str()).expect("Failed to parse test user ID")
+    }
+
+    pub async fn create_test_patterns(&self, user_id: &Uuid, count: usize) -> Vec<Uuid> {
+        let mut pattern_ids = vec![];
+
+        for i in 0..count {
+            let pattern_id = Uuid::new_v4();
+            sqlx::query!(
+                r#"
+                INSERT INTO patterns_tb303 (pattern_id, user_id, author, title, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                "#,
+                pattern_id,
+                user_id,
+                format!("Author {}", i + 1),
+                format!("Pattern {}", i + 1),
+                chrono::Utc::now(),
+                chrono::Utc::now(),
+            )
+                .execute(&self.db_pool)
+                .await
+                .expect("Failed to create test pattern");
+
+            pattern_ids.push(pattern_id);
+        }
+
+        pattern_ids
     }
 }
 

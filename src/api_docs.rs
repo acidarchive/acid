@@ -24,7 +24,11 @@ impl Modify for SecurityAddon {
 
 #[derive(OpenApi)]
 #[openapi(
-    paths(patterns::create_tb303_pattern, patterns::get_random_tb303_pattern),
+    paths(
+        patterns::create_tb303_pattern,
+        patterns::get_random_tb303_pattern,
+        patterns::list_tb303_patterns,
+    ),
     components(schemas(patterns::PatternTB303Request, patterns::PatternTB303Response,
         patterns::TB303StepData, patterns::TB303PatternData)),
     modifiers(&SecurityAddon)

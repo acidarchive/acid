@@ -12,7 +12,11 @@ CREATE TABLE patterns_tb303(
     env_mod INTEGER DEFAULT 0,
     decay INTEGER DEFAULT 0,
     accent INTEGER DEFAULT 0,
-    updated_at timestamptz,
-    created_at timestamptz,
+    updated_at timestamptz NOT NULL DEFAULT NOW(),
+    created_at timestamptz NOT NULL DEFAULT NOW(),
     PRIMARY KEY (pattern_id)
 );
+
+CREATE INDEX idx_patterns_tb303_created ON patterns_tb303(created_at);
+CREATE INDEX idx_patterns_tb303_author_gin ON patterns_tb303 USING gin(to_tsvector('english', author));
+CREATE INDEX idx_patterns_tb303_title_gin ON patterns_tb303 USING gin(to_tsvector('english', title));

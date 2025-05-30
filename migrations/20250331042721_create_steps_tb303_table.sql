@@ -7,7 +7,7 @@ CREATE TABLE steps_tb303(
     "time" TEXT,
     accent BOOLEAN DEFAULT FALSE,
     slide BOOLEAN DEFAULT FALSE,
-    updated_at timestamptz,
-    created_at timestamptz,
+    updated_at timestamptz NOT NULL DEFAULT NOW(),
+    created_at timestamptz NOT NULL DEFAULT NOW(),
     PRIMARY KEY (step_id)
 );

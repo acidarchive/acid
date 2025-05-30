@@ -33,15 +33,7 @@ pub struct CognitoSettings {
     pub region: String,
     pub user_pool_id: String,
     pub user_pool_client_id: String,
-    pub test_user: TestUserSettings,
 }
-
-#[derive(serde::Deserialize, Clone, Debug)]
-pub struct TestUserSettings {
-    pub username: String,
-    pub password: Secret<String>,
-}
-
 impl DatabaseSettings {
     pub fn connect_options(&self) -> PgConnectOptions {
         let ssl_mode = if self.require_ssl {
