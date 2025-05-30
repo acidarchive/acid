@@ -76,7 +76,8 @@ async fn run(
                         .service(
                             web::scope("")
                                 .wrap(from_fn(reject_unauthorized_users))
-                                .route("/tb303", web::post().to(patterns::create_tb303_pattern)),
+                                .route("/tb303", web::post().to(patterns::create_tb303_pattern))
+                                .route("/tb303", web::get().to(patterns::list_tb303_patterns)),
                         ),
                 ),
             )

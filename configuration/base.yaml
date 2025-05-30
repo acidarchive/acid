@@ -10,6 +10,3 @@ cognito:
   region: "CHANGE_ME"
   user_pool_id: "CHANGE_ME"
   user_pool_client_id: "CHANGE_ME"
-  test_user:
-    username: "CHANGE_ME"
-    password: "CHANGE_ME"

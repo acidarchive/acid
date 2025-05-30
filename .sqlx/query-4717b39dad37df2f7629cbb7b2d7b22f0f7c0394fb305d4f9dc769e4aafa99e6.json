@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "ALTER TABLE patterns_tb303 DROP column title",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "4717b39dad37df2f7629cbb7b2d7b22f0f7c0394fb305d4f9dc769e4aafa99e6"
+}
