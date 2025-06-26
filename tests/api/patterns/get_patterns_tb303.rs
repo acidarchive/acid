@@ -63,9 +63,8 @@ async fn get_patterns_tb303_returns_first_page_with_default_pagination() {
     let token = app.get_test_user_token().await;
 
     for _i in 0..15 {
-        let body = get_valid_tb303_pattern_data();
-        app.post_patterns_tb303(body.into(), Some(token.clone()))
-            .await;
+        let body = get_valid_tb303_pattern_data(None);
+        app.post_patterns_tb303(body, Some(token.clone())).await;
     }
 
     // Act
@@ -91,9 +90,8 @@ async fn get_patterns_tb303_returns_second_page_correctly() {
     let token = app.get_test_user_token().await;
 
     for _i in 0..15 {
-        let body = get_valid_tb303_pattern_data();
-        app.post_patterns_tb303(body.into(), Some(token.clone()))
-            .await;
+        let body = get_valid_tb303_pattern_data(None);
+        app.post_patterns_tb303(body, Some(token.clone())).await;
     }
 
     // Act
@@ -118,9 +116,8 @@ async fn get_patterns_tb303_respects_custom_per_page() {
     let app = spawn_app().await;
     let token = app.get_test_user_token().await;
     for _i in 0..25 {
-        let body = get_valid_tb303_pattern_data();
-        app.post_patterns_tb303(body.into(), Some(token.clone()))
-            .await;
+        let body = get_valid_tb303_pattern_data(None);
+        app.post_patterns_tb303(body, Some(token.clone())).await;
     }
 
     // Act
@@ -145,9 +142,8 @@ async fn get_patterns_tb303_caps_page_size_at_maximum() {
     let token = app.get_test_user_token().await;
 
     for _i in 0..60 {
-        let body = get_valid_tb303_pattern_data();
-        app.post_patterns_tb303(body.into(), Some(token.clone()))
-            .await;
+        let body = get_valid_tb303_pattern_data(None);
+        app.post_patterns_tb303(body, Some(token.clone())).await;
     }
 
     // Act

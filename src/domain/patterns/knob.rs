@@ -7,7 +7,7 @@ impl Knob {
         let is_greater_than_360 = i > 360;
 
         if is_greater_than_360 || is_less_than_0 {
-            Err(format!("{} is not a valid knob value. ", i))
+            Err(format!("{i} is not a valid knob value. "))
         } else {
             Ok(Self(i))
         }

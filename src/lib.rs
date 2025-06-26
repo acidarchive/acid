@@ -1,4 +1,5 @@
 #![allow(clippy::toplevel_ref_arg)]
+pub mod api;
 pub mod api_docs;
 pub mod authentication;
 pub mod common;

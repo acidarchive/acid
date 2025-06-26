@@ -1,7 +1,7 @@
+use crate::api::models::tb303::CreateTB303Pattern;
 use crate::authentication::UserId;
 use crate::domain::{
-    Author, Description, Knob, NewTB303Pattern, NewTB303Step, Note, Octave, StepNumber, Time,
-    Title, Waveform, BPM,
+    Author, Description, Knob, Name, NewTB303Pattern, NewTB303Step, StepNumber, Tempo, Title,
 };
 use crate::routes::patterns::PatternErrorResponse;
 use crate::utils::error_chain_fmt;
@@ -12,49 +12,6 @@ use sqlx::{Executor, PgPool, Postgres, QueryBuilder, Transaction};
 use std::convert::TryInto;
 use utoipa::ToSchema;
 use uuid::Uuid;
-
-#[derive(serde::Deserialize, Debug, ToSchema)]
-pub struct PatternTB303Request {
-    #[schema(example = "user123")]
-    author: Option<String>,
-    #[schema(example = "My first pattern", required = true)]
-    title: Option<String>,
-    #[schema(example = "This is a cool pattern")]
-    description: Option<String>,
-    #[schema(example = 120)]
-    bpm: Option<i32>,
-    #[schema(example = "sawtooth")]
-    waveform: Option<String>,
-    #[schema(example = true)]
-    triplets: Option<bool>,
-    #[schema(example = 50)]
-    cut_off_freq: Option<i32>,
-    #[schema(example = 50)]
-    resonance: Option<i32>,
-    #[schema(example = 50)]
-    env_mod: Option<i32>,
-    #[schema(example = 50)]
-    decay: Option<i32>,
-    #[schema(example = 50)]
-    accent: Option<i32>,
-    steps: Vec<StepTB303>,
-}
-
-#[derive(serde::Deserialize, Debug, ToSchema)]
-pub struct StepTB303 {
-    #[schema(example = 1, required = true)]
-    pub number: i32,
-    #[schema(example = "C")]
-    pub note: Option<String>,
-    #[schema(example = "up")]
-    pub octave: Option<String>,
-    #[schema(example = "note")]
-    pub time: String,
-    #[schema(example = true)]
-    pub accent: Option<bool>,
-    #[schema(example = false)]
-    pub slide: Option<bool>,
-}
 
 #[derive(serde::Serialize, ToSchema)]
 pub struct PatternTB303Response {
@@ -77,7 +34,7 @@ pub enum CreatePatternError {
     UnexpectedError(#[from] anyhow::Error),
 }
 
-impl TryInto<NewTB303Pattern> for PatternTB303Request {
+impl TryInto<NewTB303Pattern> for CreateTB303Pattern {
     type Error = String;
 
     fn try_into(self) -> Result<NewTB303Pattern, Self::Error> {
@@ -88,17 +45,20 @@ impl TryInto<NewTB303Pattern> for PatternTB303Request {
             opt.map(parse_fn).transpose().map_err(|e| e.to_string())
         }
 
+        let name = Name::parse(self.name).map_err(|e| e.to_string())?;
         let author = parse_optional(self.author, Author::parse)?;
         let title = parse_optional(self.title, Title::parse)?;
         let description = parse_optional(self.description, Description::parse)?;
-        let waveform = parse_optional(self.waveform, Waveform::parse)?;
+        let waveform = self.waveform;
         let triplets = self.triplets;
-        let bpm = parse_optional(self.bpm, BPM::parse)?;
+        let tempo = parse_optional(self.tempo, Tempo::parse)?;
+        let tuning = parse_optional(self.tuning, Knob::parse)?;
         let cut_off_freq = parse_optional(self.cut_off_freq, Knob::parse)?;
         let resonance = parse_optional(self.resonance, Knob::parse)?;
         let env_mod = parse_optional(self.env_mod, Knob::parse)?;
         let decay = parse_optional(self.decay, Knob::parse)?;
         let accent = parse_optional(self.accent, Knob::parse)?;
+        let is_public = self.is_public;
 
         if self.steps.is_empty() {
             return Err("Pattern must contain at least one step.".to_string());
@@ -108,11 +68,11 @@ impl TryInto<NewTB303Pattern> for PatternTB303Request {
             .steps
             .into_iter()
             .map(|step| {
-                let time = Time::parse(step.time).map_err(|e| e.to_string())?;
-                let note = parse_optional(step.note, Note::parse)?;
-                let octave = parse_optional(step.octave, Octave::parse)?;
+                let time = step.time;
+                let note = step.note;
+                let transpose = step.transpose;
 
-                if time.as_ref() == "rest" && (note.is_some() || octave.is_some()) {
+                if time.as_ref() == "rest" && (note.is_some() || transpose.is_some()) {
                     return Err(format!(
                         "Step {} is marked as 'rest' contains a note or octave.",
                         step.number
@@ -122,7 +82,7 @@ impl TryInto<NewTB303Pattern> for PatternTB303Request {
                 Ok(NewTB303Step {
                     number: StepNumber::parse(step.number).map_err(|e| e.to_string())?,
                     note,
-                    octave,
+                    transpose,
                     time,
                     accent: step.accent,
                     slide: step.slide,
@@ -164,17 +124,20 @@ impl TryInto<NewTB303Pattern> for PatternTB303Request {
         }
 
         Ok(NewTB303Pattern {
+            name,
             author,
             title,
             description,
             waveform,
             triplets,
-            bpm,
+            tempo,
+            tuning,
             cut_off_freq,
             resonance,
             env_mod,
             decay,
             accent,
+            is_public,
             steps,
         })
     }
@@ -194,7 +157,7 @@ pub async fn insert_steps_tb303(
     }
 
     let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
-        "INSERT INTO steps_tb303 (step_id, pattern_id, number, note, octave, time, accent, slide, created_at) ",
+        "INSERT INTO steps_tb303 (step_id, pattern_id, number, note, transpose, time, accent, slide, created_at) ",
     );
 
     query_builder.push_values(steps, |mut b, step| {
@@ -203,7 +166,7 @@ pub async fn insert_steps_tb303(
             .push_bind(pattern_id)
             .push_bind(*step.number.as_ref())
             .push_bind(step.note.as_ref().map(|n| n.as_ref()))
-            .push_bind(step.octave.as_ref().map(|s| s.as_ref()))
+            .push_bind(step.transpose.as_ref().map(|s| s.as_ref()))
             .push_bind(step.time.as_ref())
             .push_bind(step.accent.unwrap_or(false))
             .push_bind(step.slide.unwrap_or(false))
@@ -216,7 +179,7 @@ pub async fn insert_steps_tb303(
 }
 
 #[utoipa::path(
-    request_body = PatternTB303Request,
+    request_body = CreateTB303Pattern,
     post,
     path = "/v1/patterns/tb303",
     responses(
@@ -230,7 +193,7 @@ pub async fn insert_steps_tb303(
 )]
 #[tracing::instrument(name = "Adding new pattern")]
 pub async fn create_tb303_pattern(
-    pattern: web::Json<PatternTB303Request>,
+    pattern: web::Json<CreateTB303Pattern>,
     pool: web::Data<PgPool>,
     user_id: web::ReqData<UserId>,
 ) -> Result<web::Json<PatternTB303Response>, CreatePatternError> {
@@ -283,29 +246,38 @@ pub async fn insert_pattern(
         INSERT INTO patterns_tb303 (
             pattern_id,
             user_id,
+            name,
             author,
             title,
             description,
             waveform,
             triplets,
-            bpm,
+            tempo,
+            tuning,
             cut_off_freq,
             resonance,
             env_mod,
             decay,
             accent,
+            is_public,
             updated_at,
             created_at )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
         "#,
         pattern_id,
         user_id,
+        new_pattern.name.as_ref(),
         new_pattern.author.as_ref().map(|a| a.as_ref()),
         new_pattern.title.as_ref().map(|a| a.as_ref()),
         new_pattern.description.as_ref().map(|e| e.as_ref()),
         new_pattern.waveform.as_ref().map(|w| w.as_ref()),
         new_pattern.triplets.unwrap_or(false),
-        new_pattern.bpm.as_ref().map(|b| b.as_ref()),
+        new_pattern.tempo.as_ref().map(|b| b.as_ref()),
+        new_pattern
+            .tuning
+            .as_ref()
+            .map(|t| t.as_ref())
+            .unwrap_or(&0),
         new_pattern
             .cut_off_freq
             .as_ref()
@@ -327,6 +299,7 @@ pub async fn insert_pattern(
             .as_ref()
             .map(|a| a.as_ref())
             .unwrap_or(&0),
+        new_pattern.is_public.unwrap_or(false),
         Utc::now(),
         Utc::now()
     );

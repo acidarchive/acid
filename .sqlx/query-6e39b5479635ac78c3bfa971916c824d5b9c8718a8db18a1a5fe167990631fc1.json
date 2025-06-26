@@ -1,56 +1,48 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            step_id, pattern_id, number, note, octave, \"time\", accent, slide\n        FROM steps_tb303\n        WHERE pattern_id = $1\n        ORDER BY number\n        ",
+  "query": "SELECT pattern_id, number, note, transpose, time, accent, slide\n         FROM steps_tb303\n         WHERE pattern_id = (SELECT pattern_id FROM patterns_tb303 LIMIT 1)\n         ORDER BY number",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "step_id",
-        "type_info": "Uuid"
-      },
-      {
-        "ordinal": 1,
         "name": "pattern_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 2,
+        "ordinal": 1,
         "name": "number",
         "type_info": "Int4"
       },
       {
-        "ordinal": 3,
+        "ordinal": 2,
         "name": "note",
         "type_info": "Text"
       },
       {
-        "ordinal": 4,
-        "name": "octave",
+        "ordinal": 3,
+        "name": "transpose",
         "type_info": "Text"
       },
       {
-        "ordinal": 5,
+        "ordinal": 4,
         "name": "time",
         "type_info": "Text"
       },
       {
-        "ordinal": 6,
+        "ordinal": 5,
         "name": "accent",
         "type_info": "Bool"
       },
       {
-        "ordinal": 7,
+        "ordinal": 6,
         "name": "slide",
         "type_info": "Bool"
       }
     ],
     "parameters": {
-      "Left": [
-        "Uuid"
-      ]
+      "Left": []
     },
     "nullable": [
-      false,
       false,
       false,
       true,
@@ -60,5 +52,5 @@
       true
     ]
   },
-  "hash": "ffda109e008aec808ec237c166691b4c7b2aef40b823a4c6b460b47fa2b00638"
+  "hash": "6e39b5479635ac78c3bfa971916c824d5b9c8718a8db18a1a5fe167990631fc1"
 }

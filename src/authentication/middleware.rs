@@ -88,10 +88,8 @@ async fn get_decoding_key(
         return Ok(key.clone());
     }
 
-    let jwks_url = format!(
-        "https://cognito-idp.{}.amazonaws.com/{}/.well-known/jwks.json",
-        region, user_pool_id
-    );
+    let jwks_url =
+        format!("https://cognito-idp.{region}.amazonaws.com/{user_pool_id}/.well-known/jwks.json");
 
     let jwk_set: JwkSet = reqwest::Client::new()
         .get(&jwks_url)
@@ -166,7 +164,7 @@ pub async fn reject_unauthorized_users(
         Ok(token) => token,
         Err(e) => {
             // Log the specific error internally but return generic response
-            let error_msg = format!("Authentication failed: {}", e);
+            let error_msg = format!("Authentication failed: {e}");
             return Err(InternalError::from_response(
                 anyhow!(error_msg),
                 create_unauthorized_response(),
@@ -178,7 +176,7 @@ pub async fn reject_unauthorized_users(
     let token_header = match decode_header(token) {
         Ok(header) => header,
         Err(e) => {
-            let error_msg = format!("Failed to decode token header: {}", e);
+            let error_msg = format!("Failed to decode token header: {e}");
             return Err(InternalError::from_response(
                 anyhow!(error_msg),
                 create_unauthorized_response(),
@@ -208,8 +206,7 @@ pub async fn reject_unauthorized_users(
     let mut validation = Validation::new(Algorithm::RS256);
     validation.set_audience(&[client_id.clone()]);
     validation.set_issuer(&[format!(
-        "https://cognito-idp.{}.amazonaws.com/{}",
-        region, user_pool_id
+        "https://cognito-idp.{region}.amazonaws.com/{user_pool_id}"
     )]);
 
     let token_data = match decode::<CognitoClaims>(token, &decoding_key, &validation) {

@@ -1,0 +1,124 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            pattern_id, user_id, name, author, title, description,\n            waveform, triplets, tempo, tuning, cut_off_freq, resonance,\n            env_mod, decay, accent, is_public, created_at, updated_at\n        FROM patterns_tb303\n        WHERE pattern_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pattern_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "author",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "title",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "description",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "waveform",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "triplets",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 8,
+        "name": "tempo",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "tuning",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 10,
+        "name": "cut_off_freq",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "resonance",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 12,
+        "name": "env_mod",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
+        "name": "decay",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 14,
+        "name": "accent",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 15,
+        "name": "is_public",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 16,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 17,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "2a8ea41d0dcf57964a1ea80c241da1f909e830de5d633905a1dc9ab56b6a2b6f"
+}

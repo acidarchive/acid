@@ -5,10 +5,10 @@ use crate::test_data::get_valid_tb303_pattern_data;
 async fn post_pattern_tb303_returns_401_for_unauthorized_requests() {
     // Arrange
     let app = spawn_app().await;
-    let body = get_valid_tb303_pattern_data();
+    let body = get_valid_tb303_pattern_data(None);
 
     // Act
-    let response = app.post_patterns_tb303(body.into(), None).await;
+    let response = app.post_patterns_tb303(body, None).await;
 
     // Assert
     assert_eq!(401, response.status().as_u16());
@@ -18,23 +18,24 @@ async fn post_pattern_tb303_returns_401_for_unauthorized_requests() {
 async fn post_pattern_tb303_persists_the_new_pattern() {
     // Arrange
     let app = spawn_app().await;
-    let body = get_valid_tb303_pattern_data();
+    let body = get_valid_tb303_pattern_data(Some(true));
 
     let token = Some(app.get_test_user_token().await);
 
-    let response = app.post_patterns_tb303(body.into(), token).await;
+    let response = app.post_patterns_tb303(body, token).await;
 
     // Assert
     assert_eq!(200, response.status().as_u16());
 
     let saved = sqlx::query!(
-        "SELECT author, title, description, waveform, triplets, bpm, cut_off_freq, resonance, \
-        env_mod, decay, accent FROM patterns_tb303"
+        "SELECT name, author, title, description, waveform, triplets, tempo, tuning, cut_off_freq, resonance, \
+        env_mod, decay, accent, is_public FROM patterns_tb303"
     )
     .fetch_one(&app.db_pool)
     .await
     .expect("Failed to fetch saved pattern");
 
+    assert_eq!(saved.name, "Pattern 1".to_string());
     assert_eq!(saved.author, Some("Humanoind".to_string()));
     assert_eq!(saved.title, Some("Stakker humanoid".to_string()));
     assert_eq!(
@@ -45,15 +46,17 @@ async fn post_pattern_tb303_persists_the_new_pattern() {
     );
     assert_eq!(saved.waveform, Some("sawtooth".to_string()));
     assert_eq!(saved.triplets, Some(true));
-    assert_eq!(saved.bpm, Some(130));
+    assert_eq!(saved.tempo, Some(130));
     assert_eq!(saved.cut_off_freq, Some(10));
     assert_eq!(saved.resonance, Some(20));
     assert_eq!(saved.env_mod, Some(30));
     assert_eq!(saved.decay, Some(40));
     assert_eq!(saved.accent, Some(50));
+    assert_eq!(saved.tuning, Some(60));
+    assert_eq!(saved.is_public, Some(true));
 
     let saved_steps = sqlx::query!(
-        "SELECT pattern_id, number, note, octave, time, accent, slide
+        "SELECT pattern_id, number, note, transpose, time, accent, slide
          FROM steps_tb303
          WHERE pattern_id = (SELECT pattern_id FROM patterns_tb303 LIMIT 1)
          ORDER BY number"
@@ -74,7 +77,7 @@ async fn post_pattern_tb303_persists_the_new_pattern() {
     let step6 = &saved_steps[5];
     assert_eq!(step6.number, 6);
     assert_eq!(step6.note, Some("B".to_string()));
-    assert_eq!(step6.octave, Some("down".to_string()));
+    assert_eq!(step6.transpose, Some("down".to_string()));
     assert_eq!(step6.time, Some("note".to_string()));
     assert_eq!(step6.accent, Some(true));
     assert_eq!(step6.slide, Some(true));
@@ -94,119 +97,86 @@ async fn post_pattern_tb303_returns_400_for_invalid_data() {
     let test_cases = vec![
         (
             r#"{
-                "author": "Test",
-                "title": "Test Pattern",
-                "waveform": "sawtooth",
-                "bpm": 120,
+                "name": "Test Pattern",
                 "steps": []
             }"#,
             "Empty steps array",
         ),
         (
             r#"{
-                "author": "Test",
-                "title": "Test Pattern",
-                "waveform": "sawtooth",
-                "bpm": 120
+                "name": "Test Pattern",
             }"#,
             "Missing steps array",
         ),
         (
             r#"{
-                "author": "Test",
-                "title": "Test Pattern",
-                "waveform": "sawtooth",
-                "bpm": -10,
+                "name": "Test Pattern",
+                "tempo": -10,
                 "steps": [{"number": 1, "time": "note", "note": "C"}]
             }"#,
-            "Negative BPM",
+            "Negative tempo",
         ),
         (
             r#"{
-                "author": "Test",
-                "title": "Test Pattern",
-                "waveform": "sawtooth",
-                "bpm": 1000,
+                "name": "Test Pattern",
+                "tempo": 1000,
                 "steps": [{"number": 1, "time": "note", "note": "C"}]
             }"#,
-            "BPM too high",
+            "Tempo too high",
         ),
         (
             r#"{
-                "author": "Test",
-                "title": "Test Pattern",
+                "name": "Test Pattern",
                 "waveform": "invalid_waveform",
-                "bpm": 120,
                 "steps": [{"number": 1, "time": "note", "note": "C"}]
             }"#,
             "Invalid waveform",
         ),
         (
             r#"{
-                "author": "Test",
-                "title": "Test Pattern",
-                "waveform": "sawtooth",
-                "bpm": 120,
+                "name": "Test Pattern",
                 "steps": [{"number": 0, "time": "note", "note": "C"}]
             }"#,
             "Step number zero",
         ),
         (
             r#"{
-                "author": "Test",
-                "title": "Test Pattern",
-                "waveform": "sawtooth",
-                "bpm": 120,
+                "name": "Test Pattern",
                 "steps": [{"number": 17, "time": "note", "note": "C"}]
             }"#,
             "Step number too high",
         ),
         (
             r#"{
-                "author": "Test",
-                "title": "Test Pattern",
-                "waveform": "sawtooth",
-                "bpm": 120,
+                "name": "Test Pattern",
                 "steps": [{"number": 1, "time": "note", "note": "H"}]
             }"#,
             "Invalid note",
         ),
         (
             r#"{
-                "author": "Test",
-                "title": "Test Pattern",
-                "waveform": "sawtooth",
-                "bpm": 120,
-                "steps": [{"number": 1, "time": "note", "note": "C", "octave": "way_up"}]
+                "name": "Test Pattern",
+                "steps": [{"number": 1, "time": "note", "note": "C", "transpose": "way_up"}]
             }"#,
-            "Invalid octave",
+            "Invalid transpose",
         ),
         (
             r#"{
-                "author": "Test",
-                "title": "Test Pattern",
-                "waveform": "sawtooth",
-                "bpm": 120,
+                "name": "Test Pattern",
                 "steps": [{"number": 1, "time": "invalid_time", "note": "C"}]
             }"#,
             "Invalid time",
         ),
         (
             r#"{
-                "author": "Test",
-                "title": "Test Pattern",
-                "waveform": "sawtooth",
-                "bpm": 120,
+                "name": "Test Pattern",
                 "steps": [{"number": 1, "note": "C"}]
             }"#,
             "Missing time field",
         ),
         (
             r#"{
-                "author": "Test",
-                "title": "Test Pattern",
-                "waveform": "sawtooth",
-                "bpm": 120,
+                "name": "Test Pattern",
                 "cut_off_freq": 361,
                 "steps": [{"number": 1, "time": "note", "note": "C"}]
             }"#,
@@ -214,10 +184,7 @@ async fn post_pattern_tb303_returns_400_for_invalid_data() {
         ),
         (
             r#"{
-                "author": "Test",
-                "title": "Test Pattern",
-                "waveform": "sawtooth",
-                "bpm": 120,
+                "name": "Test Pattern",
                 "resonance": -5,
                 "steps": [{"number": 1, "time": "note", "note": "C"}]
             }"#,
@@ -225,10 +192,7 @@ async fn post_pattern_tb303_returns_400_for_invalid_data() {
         ),
         (
             r#"{
-                "author": "Test",
-                "title": "Test Pattern",
-                "waveform": "sawtooth",
-                "bpm": 120,
+                "name": "Test Pattern",
                 "steps": [
                     {"number": 1, "time": "note", "note": "C"},
                     {"number": 1, "time": "note", "note": "D"}
@@ -238,10 +202,7 @@ async fn post_pattern_tb303_returns_400_for_invalid_data() {
         ),
         (
             r#"{
-                "author": "Test",
-                "title": "Test Pattern",
-                "waveform": "sawtooth",
-                "bpm": 120,
+                "name": "Test Pattern",
                 "steps": [
                     {"number": 1, "time": "note", "note": "C"},
                     {"number": 3, "time": "note", "note": "D"}
@@ -251,10 +212,7 @@ async fn post_pattern_tb303_returns_400_for_invalid_data() {
         ),
         (
             r#"{
-                "author": "Test",
-                "title": "Test Pattern",
-                "waveform": "sawtooth",
-                "bpm": 120,
+                "name": "Test Pattern",
                 "steps": [
                     {"number": 1, "time": "rest", "note": "C"}
                 ]
@@ -263,15 +221,12 @@ async fn post_pattern_tb303_returns_400_for_invalid_data() {
         ),
         (
             r#"{
-                "author": "Test",
-                "title": "Test Pattern",
-                "waveform": "sawtooth",
-                "bpm": 120,
+                "name": "Test Pattern",
                 "steps": [
-                    {"number": 1, "time": "rest", "octave": "up"}
+                    {"number": 1, "time": "rest", "transpose": "up"}
                 ]
             }"#,
-            "Rest step with octave",
+            "Rest step with transpose",
         ),
     ];
 
@@ -287,8 +242,7 @@ async fn post_pattern_tb303_returns_400_for_invalid_data() {
         assert_eq!(
             400,
             response.status().as_u16(),
-            "Failed to reject invalid data: {}",
-            error_message
+            "Failed to reject invalid data: {error_message}"
         );
     }
 }
@@ -304,12 +258,12 @@ async fn post_pattern_tb303_fails_if_there_is_a_fatal_database_error() {
         .await
         .unwrap();
 
-    let body = get_valid_tb303_pattern_data();
+    let body = get_valid_tb303_pattern_data(None);
 
     let token = Some(app.get_test_user_token().await);
 
     // Act
-    let response = app.post_patterns_tb303(body.into(), token).await;
+    let response = app.post_patterns_tb303(body, token).await;
 
     // assert
     assert_eq!(response.status().as_u16(), 500);

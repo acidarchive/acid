@@ -7,7 +7,7 @@ impl StepNumber {
         let is_greater_than_16 = i > 16;
 
         if is_greater_than_16 || is_less_than_1 {
-            Err(format!("{} is not a valid step number value. ", i))
+            Err(format!("{i} is not a valid step number value. "))
         } else {
             Ok(Self(i))
         }

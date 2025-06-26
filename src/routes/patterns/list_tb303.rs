@@ -1,26 +1,12 @@
+use crate::api::models::tb303::TB303PatternSummary;
 use crate::authentication::UserId;
 use crate::common::pagination::PaginatedResponse;
 use crate::routes::patterns::PatternErrorResponse;
 use crate::utils::error_chain_fmt;
 use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use anyhow::Context;
-use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use sqlx_paginated::{paginated_query_as, FlatQueryParams};
-use utoipa::ToSchema;
-use uuid::Uuid;
-
-#[derive(serde::Serialize, sqlx::FromRow, Default, ToSchema)]
-pub struct PatternTB303Summary {
-    #[schema(example = "123e4567-e89b-12d3-a456-426614174000")]
-    pattern_id: Uuid,
-    #[schema(example = "Phuture")]
-    author: Option<String>,
-    #[schema(example = "Acid Trax")]
-    title: Option<String>,
-    created_at: DateTime<Utc>,
-    updated_at: DateTime<Utc>,
-}
 
 #[derive(thiserror::Error)]
 pub enum ListPatternsError {
@@ -41,7 +27,7 @@ pub enum ListPatternsError {
     ),
     responses(
         (status = 200, description = "Pattern list retrieved successfully",
-            body = PaginatedResponse<PatternTB303Summary>),
+            body = PaginatedResponse<TB303PatternSummary>),
         (status = 401, description = "Unauthorized request"),
         (status = 500, description = "Internal server error")
     ),
@@ -54,7 +40,7 @@ pub async fn list_tb303_patterns(
     pool: web::Data<PgPool>,
     user_id: web::ReqData<UserId>,
     web::Query(params): web::Query<FlatQueryParams>,
-) -> Result<web::Json<PaginatedResponse<PatternTB303Summary>>, ListPatternsError> {
+) -> Result<web::Json<PaginatedResponse<TB303PatternSummary>>, ListPatternsError> {
     let user_id = user_id.into_inner();
 
     let paginated_response = get_patterns(&pool, &user_id, web::Query(params))
@@ -68,15 +54,14 @@ async fn get_patterns(
     pool: &PgPool,
     user_id: &UserId,
     web::Query(params): web::Query<FlatQueryParams>,
-) -> Result<PaginatedResponse<PatternTB303Summary>, sqlx::Error> {
+) -> Result<PaginatedResponse<TB303PatternSummary>, sqlx::Error> {
     let query = format!(
         "SELECT pattern_id, author, title, created_at, updated_at
          FROM patterns_tb303
-         WHERE user_id = '{}'",
-        user_id
+         WHERE user_id = '{user_id}'"
     );
 
-    let paginated_response = paginated_query_as!(PatternTB303Summary, query.as_str())
+    let paginated_response = paginated_query_as!(TB303PatternSummary, query.as_str())
         .with_params(params)
         .fetch_paginated(pool)
         .await?;

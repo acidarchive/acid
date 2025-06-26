@@ -9,7 +9,7 @@ impl Title {
         let is_empty = s.trim().is_empty();
 
         if is_too_long || is_empty {
-            Err(format!("{} is not a valid pattern title.", s))
+            Err(format!("{s} is not a valid pattern title."))
         } else {
             Ok(Self(s))
         }

@@ -1,65 +1,10 @@
+use crate::api::models::tb303::{TB303Pattern, TB303Step};
 use crate::routes::patterns::PatternErrorResponse;
 use crate::utils::error_chain_fmt;
 use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use anyhow::Context;
-use serde::Serialize;
 use sqlx::PgPool;
-use utoipa::ToSchema;
 use uuid::Uuid;
-
-#[derive(Serialize, ToSchema)]
-pub struct TB303PatternResponse {
-    #[schema(example = "success")]
-    status: String,
-    data: TB303PatternData,
-}
-
-#[derive(Serialize, ToSchema)]
-pub struct TB303PatternData {
-    #[schema(example = "123e4567-e89b-12d3-a456-426614174000")]
-    id: String,
-    #[schema(example = "user123")]
-    author: Option<String>,
-    #[schema(example = "My cool pattern")]
-    title: Option<String>,
-    #[schema(example = "This is a pattern")]
-    description: Option<String>,
-    #[schema(example = 120)]
-    bpm: Option<i32>,
-    #[schema(example = "sawtooth")]
-    waveform: Option<String>,
-    #[schema(example = false)]
-    triplets: Option<bool>,
-    #[schema(example = 50)]
-    cut_off_freq: Option<i32>,
-    #[schema(example = 50)]
-    resonance: Option<i32>,
-    #[schema(example = 50)]
-    env_mod: Option<i32>,
-    #[schema(example = 50)]
-    decay: Option<i32>,
-    #[schema(example = 50)]
-    accent: Option<i32>,
-    steps: Vec<TB303StepData>,
-}
-
-#[derive(Serialize, ToSchema)]
-pub struct TB303StepData {
-    #[schema(example = "123e4567-e89b-12d3-a456-426614174000")]
-    id: String,
-    #[schema(example = 1)]
-    number: i32,
-    #[schema(example = "C")]
-    note: Option<String>,
-    #[schema(example = "up")]
-    octave: Option<String>,
-    #[schema(example = "note")]
-    time: Option<String>,
-    #[schema(example = true)]
-    accent: Option<bool>,
-    #[schema(example = false)]
-    slide: Option<bool>,
-}
 
 #[derive(thiserror::Error)]
 pub enum GetPatternError {
@@ -97,13 +42,13 @@ impl ResponseError for GetPatternError {
 async fn fetch_pattern_by_id(
     pool: &PgPool,
     pattern_id: Uuid,
-) -> Result<TB303PatternData, GetPatternError> {
+) -> Result<TB303Pattern, GetPatternError> {
     let pattern = sqlx::query!(
         r#"
         SELECT
-            pattern_id, user_id, author, title, description,
-            waveform, triplets, bpm, cut_off_freq, resonance,
-            env_mod, decay, accent, created_at, updated_at
+            pattern_id, user_id, name, author, title, description,
+            waveform, triplets, tempo, tuning, cut_off_freq, resonance,
+            env_mod, decay, accent, is_public, created_at, updated_at
         FROM patterns_tb303
         WHERE pattern_id = $1
         "#,
@@ -117,7 +62,7 @@ async fn fetch_pattern_by_id(
     let steps = sqlx::query!(
         r#"
         SELECT
-            step_id, pattern_id, number, note, octave, "time", accent, slide
+            step_id, pattern_id, number, note, transpose, "time", accent, slide
         FROM steps_tb303
         WHERE pattern_id = $1
         ORDER BY number
@@ -128,25 +73,27 @@ async fn fetch_pattern_by_id(
     .await
     .context("Failed to fetch steps for pattern.")?;
 
-    let steps_response: Vec<TB303StepData> = steps
+    let steps_response: Vec<TB303Step> = steps
         .into_iter()
-        .map(|step| TB303StepData {
-            id: step.step_id.to_string(),
+        .map(|step| TB303Step {
+            id: step.step_id,
             number: step.number,
             note: step.note,
-            octave: step.octave,
+            transpose: step.transpose,
             time: step.time,
             accent: step.accent,
             slide: step.slide,
         })
         .collect();
 
-    Ok(TB303PatternData {
-        id: pattern.pattern_id.to_string(),
+    Ok(TB303Pattern {
+        id: Some(pattern.pattern_id),
+        name: pattern.name,
         author: pattern.author,
         title: pattern.title,
         description: pattern.description,
-        bpm: pattern.bpm,
+        tempo: pattern.tempo,
+        tuning: pattern.tuning,
         waveform: pattern.waveform,
         triplets: pattern.triplets,
         cut_off_freq: pattern.cut_off_freq,
@@ -154,6 +101,9 @@ async fn fetch_pattern_by_id(
         env_mod: pattern.env_mod,
         decay: pattern.decay,
         accent: pattern.accent,
+        created_at: Some(pattern.created_at),
+        updated_at: Some(pattern.updated_at),
+        is_public: pattern.is_public,
         steps: steps_response,
     })
 }
@@ -162,7 +112,7 @@ async fn fetch_pattern_by_id(
     get,
     path = "/v1/patterns/tb303/random",
     responses(
-        (status = 200, description = "Random pattern retrieved successfully", body = TB303PatternResponse),
+        (status = 200, description = "Random pattern retrieved successfully", body = TB303Pattern),
         (status = 404, description = "No patterns found"),
         (status = 500, description = "Internal server error")
     ),
@@ -173,11 +123,12 @@ async fn fetch_pattern_by_id(
 #[tracing::instrument(name = "Getting random TB303 pattern", skip(pool))]
 pub async fn get_random_tb303_pattern(
     pool: web::Data<PgPool>,
-) -> Result<web::Json<TB303PatternResponse>, GetPatternError> {
+) -> Result<web::Json<TB303Pattern>, GetPatternError> {
     let pattern_id = sqlx::query!(
         r#"
         SELECT pattern_id
         FROM patterns_tb303
+        WHERE is_public = true
         ORDER BY RANDOM()
         LIMIT 1
         "#
@@ -188,10 +139,7 @@ pub async fn get_random_tb303_pattern(
     .ok_or(GetPatternError::NoPatterns)?
     .pattern_id;
 
-    let pattern_data = fetch_pattern_by_id(pool.as_ref(), pattern_id).await?;
+    let pattern = fetch_pattern_by_id(pool.as_ref(), pattern_id).await?;
 
-    Ok(web::Json(TB303PatternResponse {
-        status: "success".to_string(),
-        data: pattern_data,
-    }))
+    Ok(web::Json(pattern))
 }
