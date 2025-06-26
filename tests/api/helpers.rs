@@ -59,7 +59,7 @@ pub async fn get_user_token(
         client_id: client_id.to_string(),
     };
 
-    let url = format!("https://cognito-idp.{}.amazonaws.com/", cognito_region);
+    let url = format!("https://cognito-idp.{cognito_region}.amazonaws.com/");
 
     let client = Client::new();
     let response = client
@@ -76,7 +76,7 @@ pub async fn get_user_token(
 
     if !response.status().is_success() {
         let error_text = response.text().await.unwrap_or_default();
-        return Err(format!("Failed to authenticate: {}", error_text).into());
+        return Err(format!("Failed to authenticate: {error_text}").into());
     }
 
     let auth_response: CognitoAuthResponse = response.json().await?;
@@ -102,11 +102,11 @@ impl TestApp {
     ) -> reqwest::Response {
         let request = self
             .api_client
-            .post(&format!("{}/v1/patterns/tb303", &self.address))
+            .post(format!("{}/v1/patterns/tb303", &self.address))
             .header("Content-Type", "application/json");
 
         let request = if let Some(token) = token {
-            request.header("Authorization", format!("Bearer {}", token))
+            request.header("Authorization", format!("Bearer {token}"))
         } else {
             request
         };
@@ -120,7 +120,7 @@ impl TestApp {
 
     pub async fn get_patterns_tb303_random(&self) -> reqwest::Response {
         self.api_client
-            .get(&format!("{}/v1/patterns/tb303/random", &self.address))
+            .get(format!("{}/v1/patterns/tb303/random", &self.address))
             .send()
             .await
             .expect("Failed to execute request.")
@@ -140,22 +140,22 @@ impl TestApp {
         let mut query_params = vec![];
 
         if let Some(p) = page {
-            query_params.push(format!("page={}", p));
+            query_params.push(format!("page={p}"));
         }
         if let Some(ps) = page_size {
-            query_params.push(format!("page_size={}", ps));
+            query_params.push(format!("page_size={ps}"));
         }
         if let Some(sc) = sort_column {
-            query_params.push(format!("sort_column={}", sc));
+            query_params.push(format!("sort_column={sc}"));
         }
         if let Some(sd) = sort_direction {
-            query_params.push(format!("sort_direction={}", sd));
+            query_params.push(format!("sort_direction={sd}"));
         }
         if let Some(s) = search {
-            query_params.push(format!("search={}", s));
+            query_params.push(format!("search={s}"));
         }
         if let Some(sc) = search_columns {
-            query_params.push(format!("search_columns={}", sc));
+            query_params.push(format!("search_columns={sc}"));
         }
 
         if !query_params.is_empty() {
@@ -166,7 +166,7 @@ impl TestApp {
         let request = self.api_client.get(&url);
 
         let request = if let Some(token) = token {
-            request.header("Authorization", format!("Bearer {}", token))
+            request.header("Authorization", format!("Bearer {token}"))
         } else {
             request
         };
@@ -198,11 +198,12 @@ impl TestApp {
             let pattern_id = Uuid::new_v4();
             sqlx::query!(
                 r#"
-                INSERT INTO patterns_tb303 (pattern_id, user_id, author, title, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6)
+                INSERT INTO patterns_tb303 (pattern_id, user_id, name, author, title, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
                 "#,
                 pattern_id,
                 user_id,
+                format!("Pattern {}", i + 1),
                 format!("Author {}", i + 1),
                 format!("Pattern {}", i + 1),
                 chrono::Utc::now(),
@@ -247,7 +248,7 @@ pub async fn spawn_app() -> TestApp {
         .unwrap();
 
     let test_app = TestApp {
-        address: format!("http://localhost:{}", application_port),
+        address: format!("http://localhost:{application_port}"),
         db_pool: get_connection_pool(&configuration.database),
         api_client: client,
         cognito: configuration.cognito,

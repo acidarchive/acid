@@ -1,3 +1,4 @@
+use crate::api::models::tb303::{TB303Pattern, TB303Step};
 use crate::routes::patterns;
 use utoipa::OpenApi;
 use utoipa::{
@@ -29,8 +30,12 @@ impl Modify for SecurityAddon {
         patterns::get_random_tb303_pattern,
         patterns::list_tb303_patterns,
     ),
-    components(schemas(patterns::PatternTB303Request, patterns::PatternTB303Response,
-        patterns::TB303StepData, patterns::TB303PatternData)),
+    components(
+        schemas(
+            TB303Pattern,
+            TB303Step
+        )
+    ),
     modifiers(&SecurityAddon)
 )]
 pub struct ApiDoc;

@@ -1,16 +1,23 @@
-pub fn get_valid_tb303_pattern_data() -> String {
-    r#"{
+use serde_json::json;
+
+pub fn get_valid_tb303_pattern_data(is_public: Option<bool>) -> String {
+    let is_public = is_public.unwrap_or(false);
+
+    json!({
+        "name": "Pattern 1",
         "author": "Humanoind",
         "title": "Stakker humanoid",
         "description": "This is a demo pattern for the TB-303. It's a classic acid house pattern.",
+        "is_public": is_public,
         "waveform": "sawtooth",
         "triplets": true,
-        "bpm": 130,
+        "tempo": 130,
         "cut_off_freq": 10,
         "resonance": 20,
         "env_mod": 30,
         "decay": 40,
         "accent": 50,
+        "tuning": 60,
         "steps": [
             {
                 "number": 1,
@@ -25,7 +32,7 @@ pub fn get_valid_tb303_pattern_data() -> String {
             {
                 "number": 3,
                 "note": "B",
-                "octave": "down",
+                "transpose": "down",
                 "time": "note"
             },
             {
@@ -35,14 +42,14 @@ pub fn get_valid_tb303_pattern_data() -> String {
             {
                 "number": 5,
                 "note": "B",
-                "octave": "down",
+                "transpose": "down",
                 "time": "note",
                 "slide": true
             },
             {
                 "number": 6,
                 "note": "B",
-                "octave": "down",
+                "transpose": "down",
                 "time": "note",
                 "accent": true,
                 "slide": true
@@ -54,13 +61,13 @@ pub fn get_valid_tb303_pattern_data() -> String {
             {
                 "number": 8,
                 "note": "B",
-                "ocatve": "down",
+                "transpose": "down",
                 "time": "note"
             },
             {
                 "number": 9,
                 "note": "D",
-                "octave": "down",
+                "transpose": "down",
                 "time": "note"
             },
             {
@@ -71,7 +78,7 @@ pub fn get_valid_tb303_pattern_data() -> String {
             {
                 "number": 11,
                 "note": "B",
-                "octave": "down",
+                "transpose": "down",
                 "time": "note"
             },
             {
@@ -86,7 +93,7 @@ pub fn get_valid_tb303_pattern_data() -> String {
             {
                 "number": 14,
                 "note": "B",
-                "octave": "down",
+                "transpose": "down",
                 "time": "note"
             },
             {
@@ -99,7 +106,6 @@ pub fn get_valid_tb303_pattern_data() -> String {
                 "time": "tied"
             }
         ]
-    }
-    "#
+    })
     .to_string()
 }

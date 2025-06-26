@@ -9,7 +9,7 @@ impl Description {
         let is_empty = s.trim().is_empty();
 
         if is_too_long || is_empty {
-            Err(format!("{} is not a valid pattern description.", s))
+            Err(format!("{s} is not a valid pattern description."))
         } else {
             Ok(Self(s))
         }
