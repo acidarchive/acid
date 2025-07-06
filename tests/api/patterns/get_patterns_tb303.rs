@@ -9,7 +9,7 @@ async fn get_patterns_tb303_returns_401_for_unauthorized_requests() {
 
     // Act
     let response = app
-        .get_patterns_tb303(None, None, None, None, None, None, None)
+        .get_patterns_tb303(None, None, None, None, None, None, None, None)
         .await;
 
     // Assert
@@ -25,7 +25,7 @@ async fn get_patterns_tb303_returns_an_empty_array_when_no_patterns_exist() {
 
     // Act
     let response = app
-        .get_patterns_tb303(token, None, None, None, None, None, None)
+        .get_patterns_tb303(token, None, None, None, None, None, None, None)
         .await;
 
     // Assert
@@ -43,7 +43,7 @@ async fn get_patterns_tb303_returns_empty_paginated_response_when_no_patterns_ex
 
     // Act
     let response = app
-        .get_patterns_tb303(token, None, None, None, None, None, None)
+        .get_patterns_tb303(token, None, None, None, None, None, None, None)
         .await;
 
     // Assert
@@ -69,7 +69,7 @@ async fn get_patterns_tb303_returns_first_page_with_default_pagination() {
 
     // Act
     let response = app
-        .get_patterns_tb303(Some(token), None, None, None, None, None, None)
+        .get_patterns_tb303(Some(token), None, None, None, None, None, None, None)
         .await;
 
     // Assert
@@ -81,6 +81,33 @@ async fn get_patterns_tb303_returns_first_page_with_default_pagination() {
     assert_eq!(json["page"], 1);
     assert_eq!(json["page_size"], 10);
     assert_eq!(json["total_pages"], 2);
+}
+
+#[tokio::test]
+async fn get_patterns_tb303_returns_first_pattern_summary_correctly() {
+    // Arrange
+    let app = spawn_app().await;
+    let token = app.get_test_user_token().await;
+
+    let body = get_valid_tb303_pattern_data(Some(true));
+    app.post_patterns_tb303(body, Some(token.clone())).await;
+
+    let response = app
+        .get_patterns_tb303(Some(token), None, None, None, None, None, None, None)
+        .await;
+
+    assert_eq!(200, response.status().as_u16());
+
+    // Assert
+    let json = response.json::<serde_json::Value>().await.unwrap();
+    let record = &json["records"][0];
+
+    assert_eq!(record["name"], "Pattern 1");
+    assert_eq!(record["author"], "Humanoind");
+    assert_eq!(record["title"], "Stakker humanoid");
+    assert_eq!(record["is_public"], true);
+    assert!(record.get("created_at").is_some());
+    assert!(record.get("updated_at").is_some());
 }
 
 #[tokio::test]
@@ -96,7 +123,7 @@ async fn get_patterns_tb303_returns_second_page_correctly() {
 
     // Act
     let response = app
-        .get_patterns_tb303(Some(token), Some(2), None, None, None, None, None)
+        .get_patterns_tb303(Some(token), Some(2), None, None, None, None, None, None)
         .await;
 
     // Assert
@@ -122,7 +149,7 @@ async fn get_patterns_tb303_respects_custom_per_page() {
 
     // Act
     let response = app
-        .get_patterns_tb303(Some(token), Some(1), Some(12), None, None, None, None)
+        .get_patterns_tb303(Some(token), Some(1), Some(12), None, None, None, None, None)
         .await;
 
     // Assert
@@ -148,7 +175,16 @@ async fn get_patterns_tb303_caps_page_size_at_maximum() {
 
     // Act
     let response = app
-        .get_patterns_tb303(Some(token), Some(1), Some(200), None, None, None, None)
+        .get_patterns_tb303(
+            Some(token),
+            Some(1),
+            Some(200),
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
         .await;
 
     // Assert
@@ -169,7 +205,7 @@ async fn get_patterns_tb303_sorts_by_created_at_desc_by_default() {
 
     // Act
     let response = app
-        .get_patterns_tb303(Some(token), None, None, None, None, None, None)
+        .get_patterns_tb303(Some(token), None, None, None, None, None, None, None)
         .await;
 
     // Assert
@@ -202,6 +238,7 @@ async fn get_patterns_tb303_sorts_by_title_asc() {
             Some("ascending"),
             None,
             None,
+            None,
         )
         .await;
 
@@ -230,7 +267,7 @@ async fn get_patterns_tb303_only_returns_user_owned_patterns() {
 
     // Act
     let response = app
-        .get_patterns_tb303(Some(token), None, None, None, None, None, None)
+        .get_patterns_tb303(Some(token), None, None, None, None, None, None, None)
         .await;
 
     // Assert
@@ -261,6 +298,7 @@ async fn get_patterns_tb303_finds_patterns_by_title() {
             None,
             Some("2"),
             Some("title"),
+            None,
         )
         .await;
 
@@ -293,6 +331,7 @@ async fn get_patterns_tb303_finds_patterns_by_author() {
             None,
             Some("Author 2"),
             Some("author"),
+            None,
         )
         .await;
 
@@ -304,6 +343,29 @@ async fn get_patterns_tb303_finds_patterns_by_author() {
 
     assert_eq!(records.len(), 1);
     assert_eq!(records[0]["author"], "Author 2");
+}
+
+#[tokio::test]
+async fn get_patterns_tb303_filters_by_is_public() {
+    // Arrange
+    let app = spawn_app().await;
+    let token = app.get_test_user_token().await;
+
+    let body = get_valid_tb303_pattern_data(Some(true));
+    app.post_patterns_tb303(body, Some(token.clone())).await;
+
+    // Act
+    let response = app
+        .get_patterns_tb303(Some(token), None, None, None, None, None, None, Some(true))
+        .await;
+
+    // Assert
+    assert_eq!(200, response.status().as_u16());
+
+    let json = response.json::<serde_json::Value>().await.unwrap();
+    let records = json["records"].as_array().unwrap();
+
+    assert_eq!(records.len(), 1);
 }
 
 #[tokio::test]
@@ -320,7 +382,7 @@ async fn get_patterns_tb303_fails_if_there_is_a_fatal_database_error() {
 
     // Act
     let response = app
-        .get_patterns_tb303(Some(token), None, None, None, None, None, None)
+        .get_patterns_tb303(Some(token), None, None, None, None, None, None, None)
         .await;
 
     // assert

@@ -24,6 +24,7 @@ pub enum ListPatternsError {
         ("sort_direction" = Option<&str>, Query, description = "Sort direction (ascending, descending)"),
         ("search" = Option<String>, Query, description = "Search patterns by title or author"),
         ("search_columns" = Option<String>, Query, description = "Columns to search in (title, author)"),
+        ("is_public" = Option<bool>, Query, description = "Filter by public/private patterns"),
     ),
     responses(
         (status = 200, description = "Pattern list retrieved successfully",
@@ -56,7 +57,7 @@ async fn get_patterns(
     web::Query(params): web::Query<FlatQueryParams>,
 ) -> Result<PaginatedResponse<TB303PatternSummary>, sqlx::Error> {
     let query = format!(
-        "SELECT pattern_id, author, title, created_at, updated_at
+        "SELECT pattern_id, name, author, title, is_public, created_at, updated_at
          FROM patterns_tb303
          WHERE user_id = '{user_id}'"
     );
