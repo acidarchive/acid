@@ -135,6 +135,7 @@ impl TestApp {
         sort_direction: Option<&str>,
         search: Option<&str>,
         search_columns: Option<&str>,
+        is_public: Option<bool>,
     ) -> reqwest::Response {
         let mut url = format!("{}/v1/patterns/tb303", &self.address);
         let mut query_params = vec![];
@@ -156,6 +157,9 @@ impl TestApp {
         }
         if let Some(sc) = search_columns {
             query_params.push(format!("search_columns={sc}"));
+        }
+        if let Some(ip) = is_public {
+            query_params.push(format!("is_public={ip}"));
         }
 
         if !query_params.is_empty() {
