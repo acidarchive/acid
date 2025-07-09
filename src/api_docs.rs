@@ -29,6 +29,7 @@ impl Modify for SecurityAddon {
         patterns::create_tb303_pattern,
         patterns::get_random_tb303_pattern,
         patterns::list_tb303_patterns,
+        patterns::get_tb303_pattern,
     ),
     components(
         schemas(

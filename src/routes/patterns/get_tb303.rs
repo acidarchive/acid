@@ -1,4 +1,5 @@
 use crate::api::models::tb303::{TB303Pattern, TB303Step};
+use crate::authentication::UserId;
 use crate::routes::patterns::PatternErrorResponse;
 use crate::utils::error_chain_fmt;
 use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
@@ -12,6 +13,8 @@ pub enum GetPatternError {
     PatternNotFound(Uuid),
     #[error("No patterns found in the database")]
     NoPatterns,
+    #[error("Access denied: you don't have permission to view this pattern")]
+    AccessDenied,
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -28,6 +31,7 @@ impl ResponseError for GetPatternError {
             GetPatternError::PatternNotFound(_) | GetPatternError::NoPatterns => {
                 StatusCode::NOT_FOUND
             }
+            GetPatternError::AccessDenied => StatusCode::NOT_FOUND,
             GetPatternError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -42,6 +46,7 @@ impl ResponseError for GetPatternError {
 async fn fetch_pattern_by_id(
     pool: &PgPool,
     pattern_id: Uuid,
+    requesting_user_id: Option<UserId>,
 ) -> Result<TB303Pattern, GetPatternError> {
     let pattern = sqlx::query!(
         r#"
@@ -58,6 +63,19 @@ async fn fetch_pattern_by_id(
     .await
     .context("Failed to fetch pattern details.")?
     .ok_or(GetPatternError::PatternNotFound(pattern_id))?;
+
+    match requesting_user_id {
+        Some(user_id) => {
+            if !pattern.is_public.unwrap_or(false) && pattern.user_id != *user_id {
+                return Err(GetPatternError::AccessDenied);
+            }
+        }
+        None => {
+            if !pattern.is_public.unwrap_or(false) {
+                return Err(GetPatternError::PatternNotFound(pattern_id));
+            }
+        }
+    }
 
     let steps = sqlx::query!(
         r#"
@@ -139,7 +157,35 @@ pub async fn get_random_tb303_pattern(
     .ok_or(GetPatternError::NoPatterns)?
     .pattern_id;
 
-    let pattern = fetch_pattern_by_id(pool.as_ref(), pattern_id).await?;
+    let pattern = fetch_pattern_by_id(pool.as_ref(), pattern_id, None).await?;
 
+    Ok(web::Json(pattern))
+}
+
+#[utoipa::path(
+    get,
+    path = "/v1/patterns/tb303/{pattern_id}",
+    params(
+        ("pattern_id" = String, Path, description = "The ID of the TB303 pattern to retrieve")
+    ),
+    responses(
+        (status = 200, description = "Pattern retrieved successfully", body = TB303Pattern),
+        (status = 404, description = "Pattern not found or access denied"),
+        (status = 500, description = "Internal server error")
+    ),
+    security(
+        ("token" = [])
+    ),
+)]
+#[tracing::instrument(name = "Getting TB303 pattern by ID", skip(pool))]
+pub async fn get_tb303_pattern(
+    pool: web::Data<PgPool>,
+    user_id: web::ReqData<UserId>,
+    pattern_id: web::Path<Uuid>,
+) -> Result<web::Json<TB303Pattern>, GetPatternError> {
+    let pattern_id = pattern_id.into_inner();
+    let user_id = user_id.into_inner();
+
+    let pattern = fetch_pattern_by_id(pool.as_ref(), pattern_id, Some(user_id)).await?;
     Ok(web::Json(pattern))
 }
