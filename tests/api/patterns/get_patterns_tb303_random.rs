@@ -43,8 +43,6 @@ async fn get_patterns_tb303_random_returns_a_random_pattern() {
     // Act
     let response = app.get_patterns_tb303_random().await;
 
-    println!("response: {response:?}");
-
     // Assert
     assert_eq!(response.status().as_u16(), 200);
 

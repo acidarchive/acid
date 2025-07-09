@@ -126,6 +126,24 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
+    pub async fn get_pattern_tb303(
+        &self,
+        pattern_id: &Uuid,
+        token: Option<String>,
+    ) -> reqwest::Response {
+        let url = format!("{}/v1/patterns/tb303/{}", &self.address, pattern_id);
+
+        let request = self.api_client.get(&url);
+
+        let request = if let Some(token) = token {
+            request.header("Authorization", format!("Bearer {token}"))
+        } else {
+            request
+        };
+
+        request.send().await.expect("Failed to execute request.")
+    }
+
     pub async fn get_patterns_tb303(
         &self,
         token: Option<String>,
@@ -195,21 +213,28 @@ impl TestApp {
         Uuid::parse_str(user_id.as_str()).expect("Failed to parse test user ID")
     }
 
-    pub async fn create_test_patterns(&self, user_id: &Uuid, count: usize) -> Vec<Uuid> {
+    pub async fn create_test_patterns(
+        &self,
+        user_id: &Uuid,
+        count: usize,
+        is_public: Option<bool>,
+    ) -> Vec<Uuid> {
         let mut pattern_ids = vec![];
+        let public_status = is_public.unwrap_or(false);
 
         for i in 0..count {
             let pattern_id = Uuid::new_v4();
             sqlx::query!(
                 r#"
-                INSERT INTO patterns_tb303 (pattern_id, user_id, name, author, title, created_at, updated_at)
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                INSERT INTO patterns_tb303 (pattern_id, user_id, name, author, title, is_public, created_at, updated_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                 "#,
                 pattern_id,
                 user_id,
                 format!("Pattern {}", i + 1),
                 format!("Author {}", i + 1),
                 format!("Pattern {}", i + 1),
+                public_status,
                 chrono::Utc::now(),
                 chrono::Utc::now(),
             )

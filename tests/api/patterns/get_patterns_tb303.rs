@@ -201,7 +201,7 @@ async fn get_patterns_tb303_sorts_by_created_at_desc_by_default() {
     let token = app.get_test_user_token().await;
 
     let user_id = app.get_test_user_id().await;
-    app.create_test_patterns(&user_id, 3).await;
+    app.create_test_patterns(&user_id, 3, None).await;
 
     // Act
     let response = app
@@ -226,7 +226,7 @@ async fn get_patterns_tb303_sorts_by_title_asc() {
     let token = app.get_test_user_token().await;
 
     let user_id = app.get_test_user_id().await;
-    app.create_test_patterns(&user_id, 3).await;
+    app.create_test_patterns(&user_id, 3, None).await;
 
     // Act
     let response = app
@@ -262,8 +262,8 @@ async fn get_patterns_tb303_only_returns_user_owned_patterns() {
     let user_id = app.get_test_user_id().await;
     let other_user_id: Uuid = Uuid::new_v4();
 
-    app.create_test_patterns(&user_id, 3).await;
-    app.create_test_patterns(&other_user_id, 2).await;
+    app.create_test_patterns(&user_id, 3, None).await;
+    app.create_test_patterns(&other_user_id, 2, None).await;
 
     // Act
     let response = app
@@ -286,7 +286,7 @@ async fn get_patterns_tb303_finds_patterns_by_title() {
     let token = app.get_test_user_token().await;
 
     let user_id = app.get_test_user_id().await;
-    app.create_test_patterns(&user_id, 3).await;
+    app.create_test_patterns(&user_id, 3, None).await;
 
     // Act
     let response = app
@@ -319,7 +319,7 @@ async fn get_patterns_tb303_finds_patterns_by_author() {
     let token = app.get_test_user_token().await;
 
     let user_id = app.get_test_user_id().await;
-    app.create_test_patterns(&user_id, 3).await;
+    app.create_test_patterns(&user_id, 3, None).await;
 
     // Act
     let response = app
