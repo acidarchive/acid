@@ -1,4 +1,11 @@
 # 🎛️ Acid Archive Changelog
+## [0.0.1-alpha.9] - 2025-07-10
+
+### 🔧 Fixed
+
+- Put tb303 pattern docs
+
+
 ## [0.0.1-alpha.8] - 2025-07-10
 
 ### 🌀 Added
@@ -60,7 +67,8 @@
 - Init
 
 
-[0.0.1-alpha.8]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.7..0.0.1-alpha.8
+[0.0.1-alpha.9]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.8..0.0.1-alpha.9
+[0.0.1-alpha.8]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.7..v0.0.1-alpha.8
 [0.0.1-alpha.7]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.6..v0.0.1-alpha.7
 [0.0.1-alpha.6]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.5..v0.0.1-alpha.6
 [0.0.1-alpha.5]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.4..v0.0.1-alpha.5
