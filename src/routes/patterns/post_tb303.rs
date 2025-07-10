@@ -10,6 +10,7 @@ use anyhow::Context;
 use chrono::Utc;
 use sqlx::{Executor, PgPool, Postgres, QueryBuilder, Transaction};
 use std::convert::TryInto;
+use std::ops::Deref;
 use utoipa::ToSchema;
 use uuid::Uuid;
 
@@ -28,6 +29,16 @@ pub struct PatternTB303ResponseData {
 
 #[derive(thiserror::Error)]
 pub enum CreatePatternError {
+    #[error("{0}")]
+    ValidationError(String),
+    #[error(transparent)]
+    UnexpectedError(#[from] anyhow::Error),
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum UpdatePatternError {
+    #[error("Pattern with ID {0} not found")]
+    PatternNotFound(Uuid),
     #[error("{0}")]
     ValidationError(String),
     #[error(transparent)]
@@ -191,7 +202,10 @@ pub async fn insert_steps_tb303(
         ("token" = [])
     ),
 )]
-#[tracing::instrument(name = "Adding new pattern")]
+#[tracing::instrument(
+    name = "Adding new pattern"
+    skip(pattern, pool, user_id)
+)]
 pub async fn create_tb303_pattern(
     pattern: web::Json<CreateTB303Pattern>,
     pool: web::Data<PgPool>,
@@ -230,6 +244,147 @@ pub async fn create_tb303_pattern(
     }))
 }
 
+#[utoipa::path(
+    request_body = CreateTB303Pattern,
+    put,
+    path = "/v1/patterns/tb303/{pattern_id}",
+    responses(
+        (status = 200, description = "Pattern updated successfully", body = PatternTB303Response),
+        (status = 400, description = "Invalid input"),
+        (status = 404, description = "Pattern not found"),
+        (status = 500, description = "Internal server error")
+    ),
+    params(
+        ("pattern_id" = String, Path, description = "ID of the pattern to update")
+    ),
+    security(
+        ("token" = [])
+    ),
+)]
+#[tracing::instrument(name = "Updating tb303 pattern", skip(pattern, pool, user_id))]
+pub async fn update_tb303_pattern(
+    pattern_id: web::Path<Uuid>,
+    pattern: web::Json<CreateTB303Pattern>,
+    pool: web::Data<PgPool>,
+    user_id: web::ReqData<UserId>,
+) -> Result<web::Json<PatternTB303Response>, UpdatePatternError> {
+    let pattern_id = pattern_id.into_inner();
+
+    let user_id = user_id.into_inner();
+
+    let new_pattern: NewTB303Pattern = pattern
+        .0
+        .try_into()
+        .map_err(UpdatePatternError::ValidationError)?;
+
+    let mut transaction = pool
+        .begin()
+        .await
+        .context("Failed to start a transaction for update")?;
+
+    let exists = sqlx::query_scalar!(
+        r#"
+        SELECT EXISTS (
+            SELECT 1 FROM patterns_tb303 WHERE pattern_id = $1 AND user_id = $2
+        ) AS "exists!"
+        "#,
+        pattern_id,
+        *user_id
+    )
+    .fetch_one(&mut *transaction)
+    .await
+    .context("Failed to check if pattern exists")?;
+
+    if !exists {
+        return Err(UpdatePatternError::PatternNotFound(pattern_id));
+    }
+
+    sqlx::query!(
+        r#"
+        UPDATE patterns_tb303
+        SET name = $1,
+            author = $2,
+            title = $3,
+            description = $4,
+            waveform = $5,
+            triplets = $6,
+            tempo = $7,
+            tuning = $8,
+            cut_off_freq = $9,
+            resonance = $10,
+            env_mod = $11,
+            decay = $12,
+            accent = $13,
+            is_public = $14,
+            updated_at = $15
+        WHERE pattern_id = $16
+        "#,
+        new_pattern.name.as_ref(),
+        new_pattern.author.as_ref().map(|a| a.as_ref()),
+        new_pattern.title.as_ref().map(|t| t.as_ref()),
+        new_pattern.description.as_ref().map(|d| d.as_ref()),
+        new_pattern.waveform.as_ref().map(|w| w.as_ref()),
+        new_pattern.triplets.unwrap_or(false),
+        new_pattern.tempo.as_ref().map(|t| t.as_ref()),
+        new_pattern
+            .tuning
+            .as_ref()
+            .map(|v| v.as_ref())
+            .unwrap_or(&0),
+        new_pattern
+            .cut_off_freq
+            .as_ref()
+            .map(|v| v.as_ref())
+            .unwrap_or(&0),
+        new_pattern
+            .resonance
+            .as_ref()
+            .map(|v| v.as_ref())
+            .unwrap_or(&0),
+        new_pattern
+            .env_mod
+            .as_ref()
+            .map(|v| v.as_ref())
+            .unwrap_or(&0),
+        new_pattern.decay.as_ref().map(|v| v.as_ref()).unwrap_or(&0),
+        new_pattern
+            .accent
+            .as_ref()
+            .map(|v| v.as_ref())
+            .unwrap_or(&0),
+        new_pattern.is_public.unwrap_or(false),
+        Utc::now(),
+        pattern_id,
+    )
+    .execute(&mut *transaction)
+    .await
+    .context("Failed to update the pattern")?;
+
+    sqlx::query!(
+        r#"DELETE FROM steps_tb303 WHERE pattern_id = $1"#,
+        pattern_id
+    )
+    .execute(&mut *transaction)
+    .await
+    .context("Failed to delete old steps")?;
+
+    insert_steps_tb303(&mut transaction, pattern_id, &new_pattern.steps)
+        .await
+        .context("Failed to insert updated steps")?;
+
+    transaction
+        .commit()
+        .await
+        .context("Failed to commit transaction")?;
+
+    Ok(web::Json(PatternTB303Response {
+        status: "success".to_string(),
+        data: PatternTB303ResponseData {
+            id: pattern_id.to_string(),
+        },
+    }))
+}
+
 #[tracing::instrument(
     name = "Saving new tb303 pattern in the database",
     skip(new_pattern, transaction, user_id)
@@ -237,7 +392,7 @@ pub async fn create_tb303_pattern(
 pub async fn insert_pattern(
     transaction: &mut Transaction<'_, Postgres>,
     new_pattern: &NewTB303Pattern,
-    user_id: &Uuid,
+    user_id: &UserId,
 ) -> Result<Uuid, sqlx::Error> {
     let pattern_id = Uuid::new_v4();
 
@@ -265,7 +420,7 @@ pub async fn insert_pattern(
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
         "#,
         pattern_id,
-        user_id,
+        user_id.deref(),
         new_pattern.name.as_ref(),
         new_pattern.author.as_ref().map(|a| a.as_ref()),
         new_pattern.title.as_ref().map(|a| a.as_ref()),
@@ -320,6 +475,25 @@ impl ResponseError for CreatePatternError {
         match self {
             CreatePatternError::ValidationError(_) => StatusCode::BAD_REQUEST,
             CreatePatternError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+
+    fn error_response(&self) -> HttpResponse {
+        let error = PatternErrorResponse {
+            status: "error".to_string(),
+            message: self.to_string(),
+        };
+
+        HttpResponse::build(self.status_code()).json(web::Json(error))
+    }
+}
+
+impl ResponseError for UpdatePatternError {
+    fn status_code(&self) -> StatusCode {
+        match self {
+            UpdatePatternError::ValidationError(_) => StatusCode::BAD_REQUEST,
+            UpdatePatternError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            UpdatePatternError::PatternNotFound(_) => StatusCode::NOT_FOUND,
         }
     }
 

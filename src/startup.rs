@@ -81,6 +81,10 @@ async fn run(
                                 .route(
                                     "/tb303/{pattern_id}",
                                     web::get().to(patterns::get_tb303_pattern),
+                                )
+                                .route(
+                                    "/tb303/{pattern_id}",
+                                    web::put().to(patterns::update_tb303_pattern),
                                 ),
                         ),
                 ),
