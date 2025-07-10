@@ -144,6 +144,33 @@ impl TestApp {
         request.send().await.expect("Failed to execute request.")
     }
 
+    pub async fn put_pattern_tb303(
+        &self,
+        pattern_id: &Uuid,
+        body: String,
+        token: Option<String>,
+    ) -> reqwest::Response {
+        let url = format!("{}/v1/patterns/tb303/{}", &self.address, pattern_id);
+
+        println!("PUT URL: {}", url);
+        let request = self
+            .api_client
+            .put(&url)
+            .header("Content-Type", "application/json");
+
+        let request = if let Some(token) = token {
+            request.header("Authorization", format!("Bearer {token}"))
+        } else {
+            request
+        };
+
+        request
+            .body(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
     pub async fn get_patterns_tb303(
         &self,
         token: Option<String>,

@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM steps_tb303 WHERE pattern_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f2d75fae155828560c059aff0b8c275e934cbe9d9c5cb8bfcbcf0d3310d0bc18"
+}
