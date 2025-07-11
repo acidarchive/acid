@@ -84,6 +84,10 @@ async fn run(
                                 )
                                 .route(
                                     "/tb303/{pattern_id}",
+                                    web::delete().to(patterns::delete_tb303_pattern),
+                                )
+                                .route(
+                                    "/tb303/{pattern_id}",
                                     web::put().to(patterns::update_tb303_pattern),
                                 ),
                         ),
