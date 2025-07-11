@@ -144,6 +144,24 @@ impl TestApp {
         request.send().await.expect("Failed to execute request.")
     }
 
+    pub async fn delete_pattern_tb303(
+        &self,
+        pattern_id: &Uuid,
+        token: Option<String>,
+    ) -> reqwest::Response {
+        let url = format!("{}/v1/patterns/tb303/{}", &self.address, pattern_id);
+
+        let request = self.api_client.delete(&url);
+
+        let request = if let Some(token) = token {
+            request.header("Authorization", format!("Bearer {token}"))
+        } else {
+            request
+        };
+
+        request.send().await.expect("Failed to execute request.")
+    }
+
     pub async fn put_pattern_tb303(
         &self,
         pattern_id: &Uuid,
