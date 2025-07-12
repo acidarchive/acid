@@ -1,4 +1,11 @@
 # 🎛️ Acid Archive Changelog
+## [0.0.1-alpha.10] - 2025-07-12
+
+### 🌀 Added
+
+- Delete pattern endpoint
+
+
 ## [0.0.1-alpha.9] - 2025-07-10
 
 ### 🔧 Fixed
@@ -67,7 +74,8 @@
 - Init
 
 
-[0.0.1-alpha.9]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.8..0.0.1-alpha.9
+[0.0.1-alpha.10]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.9..0.0.1-alpha.10
+[0.0.1-alpha.9]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.8..v0.0.1-alpha.9
 [0.0.1-alpha.8]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.7..v0.0.1-alpha.8
 [0.0.1-alpha.7]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.6..v0.0.1-alpha.7
 [0.0.1-alpha.6]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.5..v0.0.1-alpha.6
