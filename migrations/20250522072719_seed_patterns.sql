@@ -110,7 +110,7 @@ INSERT INTO steps_tb303 (
       (gen_random_uuid(), '53d4bc60-9b42-40bf-9d27-4bb16d07cc33', 5, 'A', 'up', 'note', FALSE, TRUE, NOW(), NOW()),
       (gen_random_uuid(), '53d4bc60-9b42-40bf-9d27-4bb16d07cc33', 6, 'A', 'down', 'note', FALSE, FALSE, NOW(), NOW()),
       (gen_random_uuid(), '53d4bc60-9b42-40bf-9d27-4bb16d07cc33', 7, 'A', null, 'note', TRUE, FALSE, NOW(), NOW()),
-      (gen_random_uuid(), '53d4bc60-9b42-40bf-9d27-4bb16d07cc33', 8, 'G#', null, 'tied', TRUE, TRUE, NOW(), NOW());
+      (gen_random_uuid(), '53d4bc60-9b42-40bf-9d27-4bb16d07cc33', 8, 'G#', null, 'note', TRUE, TRUE, NOW(), NOW());
 
 INSERT INTO patterns_tb303 (
     pattern_id, user_id, name, author, title, description, triplets, tempo, waveform, tuning,
