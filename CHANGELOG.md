@@ -1,4 +1,11 @@
 # 🎛️ Acid Archive Changelog
+## [0.0.1-alpha.11] - 2025-07-25
+
+### 🔧 Fixed
+
+- Correct last step in claustrophobic string pattern
+
+
 ## [0.0.1-alpha.10] - 2025-07-12
 
 ### 🌀 Added
@@ -74,7 +81,8 @@
 - Init
 
 
-[0.0.1-alpha.10]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.9..0.0.1-alpha.10
+[0.0.1-alpha.11]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.10..0.0.1-alpha.11
+[0.0.1-alpha.10]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.9..v0.0.1-alpha.10
 [0.0.1-alpha.9]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.8..v0.0.1-alpha.9
 [0.0.1-alpha.8]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.7..v0.0.1-alpha.8
 [0.0.1-alpha.7]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.6..v0.0.1-alpha.7
