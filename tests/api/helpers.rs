@@ -144,6 +144,21 @@ impl TestApp {
         request.send().await.expect("Failed to execute request.")
     }
 
+    pub async fn list_patterns_tb303(&self, token: Option<String>) -> reqwest::Response {
+        let request = self
+            .api_client
+            .get(format!("{}/v1/patterns/tb303", &self.address))
+            .header("Content-Type", "application/json");
+
+        let request = if let Some(token) = token {
+            request.header("Authorization", format!("Bearer {token}"))
+        } else {
+            request
+        };
+
+        request.send().await.expect("Failed to execute request.")
+    }
+
     pub async fn delete_pattern_tb303(
         &self,
         pattern_id: &Uuid,
@@ -170,7 +185,6 @@ impl TestApp {
     ) -> reqwest::Response {
         let url = format!("{}/v1/patterns/tb303/{}", &self.address, pattern_id);
 
-        println!("PUT URL: {}", url);
         let request = self
             .api_client
             .put(&url)
@@ -187,58 +201,6 @@ impl TestApp {
             .send()
             .await
             .expect("Failed to execute request.")
-    }
-
-    pub async fn get_patterns_tb303(
-        &self,
-        token: Option<String>,
-        page: Option<u32>,
-        page_size: Option<u32>,
-        sort_column: Option<&str>,
-        sort_direction: Option<&str>,
-        search: Option<&str>,
-        search_columns: Option<&str>,
-        is_public: Option<bool>,
-    ) -> reqwest::Response {
-        let mut url = format!("{}/v1/patterns/tb303", &self.address);
-        let mut query_params = vec![];
-
-        if let Some(p) = page {
-            query_params.push(format!("page={p}"));
-        }
-        if let Some(ps) = page_size {
-            query_params.push(format!("page_size={ps}"));
-        }
-        if let Some(sc) = sort_column {
-            query_params.push(format!("sort_column={sc}"));
-        }
-        if let Some(sd) = sort_direction {
-            query_params.push(format!("sort_direction={sd}"));
-        }
-        if let Some(s) = search {
-            query_params.push(format!("search={s}"));
-        }
-        if let Some(sc) = search_columns {
-            query_params.push(format!("search_columns={sc}"));
-        }
-        if let Some(ip) = is_public {
-            query_params.push(format!("is_public={ip}"));
-        }
-
-        if !query_params.is_empty() {
-            url.push('?');
-            url.push_str(&query_params.join("&"));
-        }
-
-        let request = self.api_client.get(&url);
-
-        let request = if let Some(token) = token {
-            request.header("Authorization", format!("Bearer {token}"))
-        } else {
-            request
-        };
-
-        request.send().await.expect("Failed to execute request.")
     }
 
     pub async fn get_test_user_token(&self) -> String {

@@ -1,12 +1,11 @@
 use crate::api::models::tb303::TB303PatternSummary;
 use crate::authentication::UserId;
-use crate::common::pagination::PaginatedResponse;
 use crate::routes::patterns::PatternErrorResponse;
 use crate::utils::error_chain_fmt;
 use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use anyhow::Context;
 use sqlx::PgPool;
-use sqlx_paginated::{paginated_query_as, FlatQueryParams};
+use std::ops::Deref;
 
 #[derive(thiserror::Error)]
 pub enum ListPatternsError {
@@ -17,59 +16,59 @@ pub enum ListPatternsError {
 #[utoipa::path(
     get,
     path = "/v1/patterns/tb303",
-    params(
-        ("page" = Option<u32>, Query, description = "Page number (default: 1)"),
-        ("page_size" = Option<u32>, Query, description = "Items per page (default: 10)"),
-        ("sort_column" = Option<&str>, Query, description = "Column to sort by created_at, title)"),
-        ("sort_direction" = Option<&str>, Query, description = "Sort direction (ascending, descending)"),
-        ("search" = Option<String>, Query, description = "Search patterns by title or author"),
-        ("search_columns" = Option<String>, Query, description = "Columns to search in (title, author)"),
-        ("is_public" = Option<bool>, Query, description = "Filter by public/private patterns"),
-    ),
     responses(
-        (status = 200, description = "Pattern list retrieved successfully",
-            body = PaginatedResponse<TB303PatternSummary>),
-        (status = 401, description = "Unauthorized request"),
-        (status = 500, description = "Internal server error")
+        (status = 200, description = "Pattern list retrieved successfully.", body = Vec<TB303PatternSummary>),
+        (status = 500, description = "Internal server error.")
     ),
     security(
         ("token" = [])
     ),
+
 )]
-#[tracing::instrument(name = "Listing user's TB303 patterns", skip(pool))]
+#[tracing::instrument(name = "Listing user's TB303 patterns", skip(pool, user_id))]
 pub async fn list_tb303_patterns(
     pool: web::Data<PgPool>,
     user_id: web::ReqData<UserId>,
-    web::Query(params): web::Query<FlatQueryParams>,
-) -> Result<web::Json<PaginatedResponse<TB303PatternSummary>>, ListPatternsError> {
+) -> Result<web::Json<Vec<TB303PatternSummary>>, ListPatternsError> {
     let user_id = user_id.into_inner();
 
-    let paginated_response = get_patterns(&pool, &user_id, web::Query(params))
+    let patterns = fetch_pattern_list(&pool, &user_id)
         .await
         .context("Failed to fetch patterns")?;
 
-    Ok(web::Json(paginated_response))
+    Ok(web::Json(patterns))
 }
 
-async fn get_patterns(
+async fn fetch_pattern_list(
     pool: &PgPool,
     user_id: &UserId,
-    web::Query(params): web::Query<FlatQueryParams>,
-) -> Result<PaginatedResponse<TB303PatternSummary>, sqlx::Error> {
-    let query = format!(
-        "SELECT pattern_id, name, author, title, is_public, created_at, updated_at
-         FROM patterns_tb303
-         WHERE user_id = '{user_id}'"
-    );
+) -> Result<Vec<TB303PatternSummary>, sqlx::Error> {
+    let patterns = sqlx::query!(
+        r#"
+        SELECT pattern_id, name, author, title, is_public, created_at, updated_at
+        FROM patterns_tb303
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+        "#,
+        user_id.deref()
+    )
+    .fetch_all(pool)
+    .await?;
 
-    let paginated_response = paginated_query_as!(TB303PatternSummary, query.as_str())
-        .with_params(params)
-        .fetch_paginated(pool)
-        .await?;
+    let patterns_response: Vec<TB303PatternSummary> = patterns
+        .into_iter()
+        .map(|pattern| TB303PatternSummary {
+            pattern_id: pattern.pattern_id,
+            name: pattern.name,
+            author: pattern.author,
+            title: pattern.title,
+            is_public: pattern.is_public.unwrap(),
+            created_at: pattern.created_at,
+            updated_at: pattern.updated_at,
+        })
+        .collect();
 
-    let paginated_response = PaginatedResponse::from(paginated_response);
-
-    Ok(paginated_response)
+    Ok(patterns_response)
 }
 
 impl std::fmt::Debug for ListPatternsError {
