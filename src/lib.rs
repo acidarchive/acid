@@ -2,7 +2,6 @@
 pub mod api;
 pub mod api_docs;
 pub mod authentication;
-pub mod common;
 pub mod configuration;
 pub mod domain;
 pub mod routes;

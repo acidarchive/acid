@@ -204,7 +204,7 @@ pub async fn reject_unauthorized_users(
     };
 
     let mut validation = Validation::new(Algorithm::RS256);
-    validation.set_audience(&[client_id.clone()]);
+    validation.set_audience(std::slice::from_ref(client_id));
     validation.set_issuer(&[format!(
         "https://cognito-idp.{region}.amazonaws.com/{user_pool_id}"
     )]);
