@@ -1,4 +1,11 @@
 # 🎛️ Acid Archive Changelog
+## [0.0.1-alpha.13] - 2025-09-29
+
+### 🔧 Fixed
+
+- Update pattern seeds
+
+
 ## [0.0.1-alpha.12] - 2025-09-23
 
 ### 🌀 Added
@@ -88,7 +95,8 @@
 - Init
 
 
-[0.0.1-alpha.12]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.11..0.0.1-alpha.12
+[0.0.1-alpha.13]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.12..0.0.1-alpha.13
+[0.0.1-alpha.12]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.11..v0.0.1-alpha.12
 [0.0.1-alpha.11]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.10..v0.0.1-alpha.11
 [0.0.1-alpha.10]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.9..v0.0.1-alpha.10
 [0.0.1-alpha.9]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.8..v0.0.1-alpha.9
