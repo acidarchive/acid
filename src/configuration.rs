@@ -1,3 +1,4 @@
+use crate::s3_client::S3Client;
 use secrecy::{ExposeSecret, Secret};
 use serde_aux::field_attributes::deserialize_number_from_string;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
@@ -8,6 +9,7 @@ pub struct Settings {
     pub database: DatabaseSettings,
     pub application: ApplicationSettings,
     pub cognito: CognitoSettings,
+    pub s3: S3Settings,
 }
 
 #[derive(serde::Deserialize, Clone, Debug)]
@@ -34,6 +36,25 @@ pub struct CognitoSettings {
     pub user_pool_id: String,
     pub user_pool_client_id: String,
 }
+
+#[derive(serde::Deserialize, Clone, Debug)]
+pub struct S3Settings {
+    pub region: String,
+    pub bucket: String,
+    pub endpoint_url: Option<String>,
+}
+
+impl S3Settings {
+    pub async fn client(&self) -> S3Client {
+        S3Client::new(
+            self.region.clone(),
+            self.bucket.clone(),
+            self.endpoint_url.clone(),
+        )
+        .await
+    }
+}
+
 impl DatabaseSettings {
     pub fn connect_options(&self) -> PgConnectOptions {
         let ssl_mode = if self.require_ssl {

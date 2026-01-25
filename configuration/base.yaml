@@ -10,3 +10,6 @@ cognito:
   region: "CHANGE_ME"
   user_pool_id: "CHANGE_ME"
   user_pool_client_id: "CHANGE_ME"
+s3:
+  region: "CHANGE_ME"
+  bucket: "CHANGE_ME"

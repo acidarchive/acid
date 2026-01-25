@@ -1,5 +1,6 @@
 use crate::api::models::tb303::{TB303Pattern, TB303Step};
-use crate::routes::patterns;
+use crate::api::models::uploads::{PresignRequest, PresignResponse};
+use crate::routes::{patterns, uploads};
 use utoipa::OpenApi;
 use utoipa::{
     openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
@@ -31,12 +32,15 @@ impl Modify for SecurityAddon {
         patterns::list_tb303_patterns,
         patterns::get_tb303_pattern,
         patterns::delete_tb303_pattern,
-        patterns::update_tb303_pattern
+        patterns::update_tb303_pattern,
+        uploads::presign_upload,
     ),
     components(
         schemas(
             TB303Pattern,
-            TB303Step
+            TB303Step,
+            PresignRequest,
+            PresignResponse,
         )
     ),
     modifiers(&SecurityAddon)
