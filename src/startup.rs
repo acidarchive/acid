@@ -1,7 +1,8 @@
 use crate::api_docs::ApiDoc;
 use crate::authentication::reject_unauthorized_users;
 use crate::configuration::{DatabaseSettings, Settings};
-use crate::routes::{health_check, patterns};
+use crate::routes::{health_check, patterns, uploads};
+use crate::s3_client::S3Client;
 use crate::utils::get_error_response;
 use actix_cors::Cors;
 use actix_web::{
@@ -23,6 +24,7 @@ pub struct Application {
 impl Application {
     pub async fn build(configuration: Settings) -> Result<Self, anyhow::Error> {
         let connection_pool = get_connection_pool(&configuration.database);
+        let s3_client = configuration.s3.client().await;
 
         let address = format!(
             "{}:{}",
@@ -30,7 +32,7 @@ impl Application {
         );
         let listener = TcpListener::bind(address)?;
         let port = listener.local_addr()?.port();
-        let server = run(listener, connection_pool, configuration.cognito).await?;
+        let server = run(listener, connection_pool, configuration.cognito, s3_client).await?;
 
         Ok(Self { port, server })
     }
@@ -52,9 +54,11 @@ async fn run(
     listener: TcpListener,
     db_pool: PgPool,
     cognito_settings: crate::configuration::CognitoSettings,
+    s3_client: S3Client,
 ) -> Result<Server, anyhow::Error> {
     let db_pool = Data::new(db_pool);
     let cognito_settings = Data::new(cognito_settings);
+    let s3_client = Data::new(s3_client);
 
     let server = HttpServer::new(move || {
         let cors = Cors::default()
@@ -67,31 +71,37 @@ async fn run(
             .wrap(cors)
             .wrap(TracingLogger::default())
             .service(
-                web::scope("/v1").service(
-                    web::scope("/patterns")
-                        .route(
-                            "/tb303/random",
-                            web::get().to(patterns::get_random_tb303_pattern),
-                        )
-                        .service(
-                            web::scope("")
-                                .wrap(from_fn(reject_unauthorized_users))
-                                .route("/tb303", web::post().to(patterns::create_tb303_pattern))
-                                .route("/tb303", web::get().to(patterns::list_tb303_patterns))
-                                .route(
-                                    "/tb303/{pattern_id}",
-                                    web::get().to(patterns::get_tb303_pattern),
-                                )
-                                .route(
-                                    "/tb303/{pattern_id}",
-                                    web::delete().to(patterns::delete_tb303_pattern),
-                                )
-                                .route(
-                                    "/tb303/{pattern_id}",
-                                    web::put().to(patterns::update_tb303_pattern),
-                                ),
-                        ),
-                ),
+                web::scope("/v1")
+                    .service(
+                        web::scope("/patterns")
+                            .route(
+                                "/tb303/random",
+                                web::get().to(patterns::get_random_tb303_pattern),
+                            )
+                            .service(
+                                web::scope("")
+                                    .wrap(from_fn(reject_unauthorized_users))
+                                    .route("/tb303", web::post().to(patterns::create_tb303_pattern))
+                                    .route("/tb303", web::get().to(patterns::list_tb303_patterns))
+                                    .route(
+                                        "/tb303/{pattern_id}",
+                                        web::get().to(patterns::get_tb303_pattern),
+                                    )
+                                    .route(
+                                        "/tb303/{pattern_id}",
+                                        web::delete().to(patterns::delete_tb303_pattern),
+                                    )
+                                    .route(
+                                        "/tb303/{pattern_id}",
+                                        web::put().to(patterns::update_tb303_pattern),
+                                    ),
+                            ),
+                    )
+                    .service(
+                        web::scope("/uploads")
+                            .wrap(from_fn(reject_unauthorized_users))
+                            .route("/presign", web::post().to(uploads::presign_upload)),
+                    ),
             )
             .service(RapiDoc::new("/api-docs/openapi.json").path("/docs"))
             .service(
@@ -101,6 +111,7 @@ async fn run(
             .route("/health_check", web::get().to(health_check))
             .app_data(db_pool.clone())
             .app_data(cognito_settings.clone())
+            .app_data(s3_client.clone())
             .app_data(ApiError::json_error(JsonConfig::default()))
     })
     .listen(listener)?

@@ -1,4 +1,4 @@
-use acid::configuration::{get_configuration, CognitoSettings, DatabaseSettings};
+use acid::configuration::{get_configuration, CognitoSettings, DatabaseSettings, S3Settings};
 use acid::startup::{get_connection_pool, Application};
 use acid::telemetry::{get_subscriber, init_subscriber};
 use dotenvy::dotenv;
@@ -92,6 +92,7 @@ pub struct TestApp {
     pub db_pool: PgPool,
     pub api_client: Client,
     pub cognito: CognitoSettings,
+    pub s3: S3Settings,
 }
 
 impl TestApp {
@@ -203,6 +204,25 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
+    pub async fn post_presign(&self, body: String, token: Option<String>) -> reqwest::Response {
+        let request = self
+            .api_client
+            .post(format!("{}/v1/uploads/presign", &self.address))
+            .header("Content-Type", "application/json");
+
+        let request = if let Some(token) = token {
+            request.header("Authorization", format!("Bearer {token}"))
+        } else {
+            request
+        };
+
+        request
+            .body(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
     pub async fn get_test_user_token(&self) -> String {
         get_user_token(
             dotenvy::var("TEST_USER_USERNAME").unwrap().as_str(),
@@ -266,6 +286,8 @@ pub async fn spawn_app() -> TestApp {
         let mut c = get_configuration().expect("Failed to read configuration.");
         c.database.database_name = Uuid::new_v4().to_string();
         c.application.port = 0;
+        // Use a fake endpoint for tests - presigned URLs will point here
+        c.s3.endpoint_url = Some("http://localhost:4566".to_string());
         c
     };
 
@@ -288,6 +310,7 @@ pub async fn spawn_app() -> TestApp {
         db_pool: get_connection_pool(&configuration.database),
         api_client: client,
         cognito: configuration.cognito,
+        s3: configuration.s3,
     };
 
     test_app

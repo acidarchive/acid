@@ -24,16 +24,16 @@ pub struct ErrorResponse {
     message: String,
 }
 
-pub fn get_error_response(message: String) -> ErrorResponse {
+pub fn get_error_response(message: impl Into<String>) -> ErrorResponse {
     ErrorResponse {
         status: "error".to_string(),
-        message,
+        message: message.into(),
     }
 }
 
-pub fn get_fail_response(message: String) -> ErrorResponse {
+pub fn get_fail_response(message: impl Into<String>) -> ErrorResponse {
     ErrorResponse {
         status: "fail".to_string(),
-        message,
+        message: message.into(),
     }
 }

@@ -49,6 +49,8 @@ utoipa = { version = "5", features = ["actix_extras", "chrono", "uuid"] }
 utoipa-rapidoc = { version = "6.0.0", features = ["actix-web"] }
 dotenvy = { version = "0.15.7" }
 utoipa-swagger-ui = { version = "9.0", features = ["actix-web"] }
+aws-config = { version = "1.8", features = ["behavior-version-latest"] }
+aws-sdk-s3 = "1.120"
 
 [dependencies.reqwest]
 version = "0.12.9"
