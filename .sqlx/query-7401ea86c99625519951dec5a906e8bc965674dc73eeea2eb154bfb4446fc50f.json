@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "TRUNCATE TABLE steps_tb303, patterns_tb303, users RESTART IDENTITY CASCADE",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "7401ea86c99625519951dec5a906e8bc965674dc73eeea2eb154bfb4446fc50f"
+}

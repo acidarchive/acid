@@ -10,6 +10,7 @@ pub enum S3ClientError {
 pub struct S3Client {
     client: aws_sdk_s3::Client,
     bucket: String,
+    region: String,
 }
 
 impl S3Client {
@@ -25,7 +26,11 @@ impl S3Client {
         let sdk_config = config_loader.load().await;
         let client = aws_sdk_s3::Client::new(&sdk_config);
 
-        Self { client, bucket }
+        Self {
+            client,
+            bucket,
+            region: region.to_string(),
+        }
     }
 
     pub async fn presign_put(
@@ -47,20 +52,17 @@ impl S3Client {
             .key(key)
             .content_type(content_type)
             .content_length(content_length as i64)
-            .cache_control("no-cache")
             .presigned(presigning_config)
             .await
             .map_err(|e| S3ClientError::PresignError(format!("Failed to presign request: {e}")))?;
 
-        let url = presigned_request.uri().to_string();
+        Ok(presigned_request.uri().to_string())
+    }
 
-        // Debug: check if security token is included in presigned URL
-        let has_security_token = url.contains("X-Amz-Security-Token");
-        tracing::debug!(
-            has_security_token = %has_security_token,
-            "Generated presigned URL"
-        );
-
-        Ok(url)
+    pub fn get_public_url(&self, key: &str) -> String {
+        format!(
+            "https://{}.s3.{}.amazonaws.com/{}",
+            self.bucket, self.region, key
+        )
     }
 }
