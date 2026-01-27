@@ -1,0 +1,48 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO users (user_id, avatar_key, banner_key)\n        VALUES ($1, $2, $3)\n        ON CONFLICT (user_id) DO UPDATE SET\n            avatar_key = COALESCE(excluded.avatar_key, users.avatar_key),\n            banner_key = COALESCE(excluded.banner_key, users.banner_key),\n            updated_at = NOW()\n        RETURNING user_id, avatar_key, banner_key, created_at, updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "user_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "avatar_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "banner_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "4dbe1ffe4512a3dd032537a159b214ee123b5f16aa8d08f638250338ffa5256b"
+}

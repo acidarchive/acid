@@ -223,6 +223,54 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
+    pub async fn get_user_me(&self, token: Option<String>) -> reqwest::Response {
+        let request = self
+            .api_client
+            .get(format!("{}/v1/users/me", &self.address));
+
+        let request = if let Some(token) = token {
+            request.header("Authorization", format!("Bearer {token}"))
+        } else {
+            request
+        };
+
+        request.send().await.expect("Failed to execute request.")
+    }
+
+    pub async fn patch_user_me(&self, body: String, token: Option<String>) -> reqwest::Response {
+        let request = self
+            .api_client
+            .patch(format!("{}/v1/users/me", &self.address))
+            .header("Content-Type", "application/json");
+
+        let request = if let Some(token) = token {
+            request.header("Authorization", format!("Bearer {token}"))
+        } else {
+            request
+        };
+
+        request
+            .body(body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
+    pub async fn get_presign_key(&self, token: &str, upload_type: &str) -> String {
+        let body = serde_json::json!({
+            "upload_type": upload_type,
+            "content_type": "image/png",
+            "content_length": 1024
+        });
+
+        let response = self
+            .post_presign(body.to_string(), Some(token.to_string()))
+            .await;
+        let body: serde_json::Value = response.json().await.unwrap();
+
+        body["key"].as_str().unwrap().to_string()
+    }
+
     pub async fn get_test_user_token(&self) -> String {
         get_user_token(
             dotenvy::var("TEST_USER_USERNAME").unwrap().as_str(),
@@ -341,7 +389,7 @@ async fn configure_database(config: &DatabaseSettings) -> PgPool {
         .await
         .expect("Failed to migrate the database");
 
-    sqlx::query!("TRUNCATE TABLE steps_tb303, patterns_tb303 RESTART IDENTITY CASCADE")
+    sqlx::query!("TRUNCATE TABLE steps_tb303, patterns_tb303, users RESTART IDENTITY CASCADE")
         .execute(&connection_pool)
         .await
         .expect("Failed to clean test database");

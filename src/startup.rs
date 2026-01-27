@@ -1,7 +1,7 @@
 use crate::api_docs::ApiDoc;
 use crate::authentication::reject_unauthorized_users;
 use crate::configuration::{DatabaseSettings, Settings};
-use crate::routes::{health_check, patterns, uploads};
+use crate::routes::{health_check, patterns, uploads, users};
 use crate::s3_client::S3Client;
 use crate::utils::get_error_response;
 use actix_cors::Cors;
@@ -101,6 +101,12 @@ async fn run(
                         web::scope("/uploads")
                             .wrap(from_fn(reject_unauthorized_users))
                             .route("/presign", web::post().to(uploads::presign_upload)),
+                    )
+                    .service(
+                        web::scope("/users")
+                            .wrap(from_fn(reject_unauthorized_users))
+                            .route("/me", web::get().to(users::get_me))
+                            .route("/me", web::patch().to(users::patch_me)),
                     ),
             )
             .service(RapiDoc::new("/api-docs/openapi.json").path("/docs"))
