@@ -1,4 +1,15 @@
 # 🎛️ Acid Archive Changelog
+## [0.0.1-alpha.14] - 2026-03-17
+
+### 🌀 Added
+
+- Users me endpoint
+
+- Uploads presign endpoint
+
+- Add github workflow for ecr deployment
+
+
 ## [0.0.1-alpha.13] - 2025-09-29
 
 ### 🔧 Fixed
@@ -95,7 +106,8 @@
 - Init
 
 
-[0.0.1-alpha.13]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.12..0.0.1-alpha.13
+[0.0.1-alpha.14]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.13..0.0.1-alpha.14
+[0.0.1-alpha.13]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.12..v0.0.1-alpha.13
 [0.0.1-alpha.12]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.11..v0.0.1-alpha.12
 [0.0.1-alpha.11]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.10..v0.0.1-alpha.11
 [0.0.1-alpha.10]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.9..v0.0.1-alpha.10
