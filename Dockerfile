@@ -1,4 +1,4 @@
-FROM lukemathwalker/cargo-chef:0.1.76-rust-1 AS chef
+FROM lukemathwalker/cargo-chef:latest-rust-1 AS chef
 WORKDIR /app
 RUN apt update && apt install lld clang -y
 
@@ -16,7 +16,7 @@ ENV SQLX_OFFLINE true
 # build the project
 RUN cargo build --release --bin api
 
-FROM debian:bookworm-slim AS runtime
+FROM debian:trixie-slim AS runtime
 WORKDIR /app
 RUN apt-get update -y \
     && apt-get install -y --no-install-recommends openssl ca-certificates \
