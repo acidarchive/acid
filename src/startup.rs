@@ -78,6 +78,10 @@ async fn run(
                                 "/tb303/random",
                                 web::get().to(patterns::get_random_tb303_pattern),
                             )
+                            .route(
+                                "/tb303/public",
+                                web::get().to(patterns::list_public_tb303_patterns),
+                            )
                             .service(
                                 web::scope("")
                                     .wrap(from_fn(reject_unauthorized_users))
