@@ -160,6 +160,15 @@ impl TestApp {
         request.send().await.expect("Failed to execute request.")
     }
 
+    pub async fn list_public_patterns_tb303(&self) -> reqwest::Response {
+        self.api_client
+            .get(format!("{}/v1/patterns/tb303/public", &self.address))
+            .header("Content-Type", "application/json")
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
     pub async fn delete_pattern_tb303(
         &self,
         pattern_id: &Uuid,

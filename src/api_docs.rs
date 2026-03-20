@@ -30,6 +30,7 @@ impl Modify for SecurityAddon {
     paths(
         patterns::create_tb303_pattern,
         patterns::get_random_tb303_pattern,
+        patterns::list_public_tb303_patterns,
         patterns::list_tb303_patterns,
         patterns::get_tb303_pattern,
         patterns::delete_tb303_pattern,
