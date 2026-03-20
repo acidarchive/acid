@@ -1,4 +1,6 @@
-use crate::api::models::tb303::{TB303Pattern, TB303Step};
+use crate::api::models::tb303::{
+    PaginatedPublicTB303PatternSummary, PublicTB303PatternSummary, TB303Pattern, TB303Step,
+};
 use crate::api::models::uploads::{PresignRequest, PresignResponse};
 use crate::api::models::users::{UpdateUserRequest, UserResponse};
 use crate::routes::{patterns, uploads, users};
@@ -30,6 +32,7 @@ impl Modify for SecurityAddon {
     paths(
         patterns::create_tb303_pattern,
         patterns::get_random_tb303_pattern,
+        patterns::list_public_tb303_patterns,
         patterns::list_tb303_patterns,
         patterns::get_tb303_pattern,
         patterns::delete_tb303_pattern,
@@ -42,6 +45,8 @@ impl Modify for SecurityAddon {
         schemas(
             TB303Pattern,
             TB303Step,
+            PaginatedPublicTB303PatternSummary,
+            PublicTB303PatternSummary,
             PresignRequest,
             PresignResponse,
             UpdateUserRequest,
