@@ -288,12 +288,27 @@ impl TestApp {
         Uuid::parse_str(user_id.as_str()).expect("Failed to parse test user ID")
     }
 
+    pub async fn get_test_username(&self) -> String {
+        dotenvy::var("TEST_USER_USERNAME").unwrap()
+    }
+
+    pub async fn create_test_user(&self, user_id: &Uuid) {
+        sqlx::query("INSERT INTO users (user_id, username) VALUES ($1, $2) ON CONFLICT (user_id) DO NOTHING")
+            .bind(user_id)
+            .bind(user_id.to_string())
+            .execute(&self.db_pool)
+            .await
+            .expect("Failed to create test user");
+    }
+
     pub async fn create_test_patterns(
         &self,
         user_id: &Uuid,
         count: usize,
         is_public: Option<bool>,
     ) -> Vec<Uuid> {
+        self.create_test_user(user_id).await;
+
         let mut pattern_ids = vec![];
         let public_status = is_public.unwrap_or(false);
 
@@ -393,6 +408,19 @@ async fn configure_database(config: &DatabaseSettings) -> PgPool {
         .execute(&connection_pool)
         .await
         .expect("Failed to clean test database");
+
+    let user_id = Uuid::parse_str(&dotenvy::var("TEST_USER_ID").unwrap())
+        .expect("Failed to parse test user ID");
+    let username = dotenvy::var("TEST_USER_USERNAME").unwrap();
+
+    sqlx::query!(
+        "INSERT INTO users (user_id, username) VALUES ($1, $2)",
+        user_id,
+        username
+    )
+    .execute(&connection_pool)
+    .await
+    .expect("Failed to seed test user");
 
     connection_pool
 }

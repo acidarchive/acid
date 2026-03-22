@@ -11,10 +11,11 @@ async fn get_me_returns_401_without_auth() {
 }
 
 #[tokio::test]
-async fn get_me_returns_200_and_creates_user_on_first_call() {
+async fn get_me_returns_200_with_user_data() {
     let app = spawn_app().await;
     let token = app.get_test_user_token().await;
     let user_id = app.get_test_user_id().await;
+    let username = app.get_test_username().await;
 
     let response = app.get_user_me(Some(token)).await;
 
@@ -22,6 +23,7 @@ async fn get_me_returns_200_and_creates_user_on_first_call() {
 
     let body: serde_json::Value = response.json().await.unwrap();
     assert_eq!(body["user_id"].as_str().unwrap(), user_id.to_string());
+    assert_eq!(body["username"].as_str().unwrap(), username);
     assert!(body["avatar_url"].is_null());
     assert!(body["banner_url"].is_null());
     assert!(body["created_at"].is_string());
@@ -42,6 +44,7 @@ async fn get_me_returns_same_user_on_subsequent_calls() {
     let body2: serde_json::Value = response2.json().await.unwrap();
 
     assert_eq!(body1["user_id"], body2["user_id"]);
+    assert_eq!(body1["username"], body2["username"]);
     assert_eq!(body1["created_at"], body2["created_at"]);
 }
 

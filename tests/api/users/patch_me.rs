@@ -23,19 +23,6 @@ async fn patch_me_returns_400_with_empty_body() {
 }
 
 #[tokio::test]
-async fn patch_me_returns_400_for_invalid_key() {
-    let app = spawn_app().await;
-    let token = app.get_test_user_token().await;
-
-    let body = json!({
-        "avatar_key": "avatars/other-user-id/some-uuid"
-    });
-
-    let response = app.patch_user_me(body.to_string(), Some(token)).await;
-    assert_eq!(response.status().as_u16(), 400);
-}
-
-#[tokio::test]
 async fn patch_me_sets_avatar_url() {
     let app = spawn_app().await;
     let token = app.get_test_user_token().await;

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT user_id, avatar_key, banner_key, created_at, updated_at\n        FROM users\n        WHERE user_id = $1\n        ",
+  "query": "\n        UPDATE users SET\n            avatar_key = COALESCE($2, avatar_key),\n            banner_key = COALESCE($3, banner_key),\n            updated_at = NOW()\n        WHERE user_id = $1\n        RETURNING user_id, username, avatar_key, banner_key, created_at, updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -10,31 +10,39 @@
       },
       {
         "ordinal": 1,
-        "name": "avatar_key",
+        "name": "username",
         "type_info": "Text"
       },
       {
         "ordinal": 2,
-        "name": "banner_key",
+        "name": "avatar_key",
         "type_info": "Text"
       },
       {
         "ordinal": 3,
+        "name": "banner_key",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Uuid",
+        "Text",
+        "Text"
       ]
     },
     "nullable": [
+      false,
       false,
       true,
       true,
@@ -42,5 +50,5 @@
       false
     ]
   },
-  "hash": "ab56eacb79c972ef8d8e12ad2d9312f9c5738a5faa014ae239c38aae4764c2a3"
+  "hash": "8703252ce63115298e2eca3660ed888a7a27081b71eef60a609092fdad1269ba"
 }

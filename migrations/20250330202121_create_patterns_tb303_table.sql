@@ -1,6 +1,6 @@
 CREATE TABLE patterns_tb303(
     pattern_id uuid,
-    user_id uuid NOT NULL,
+    user_id uuid NOT NULL REFERENCES users(user_id),
     name TEXT NOT NULL,
     author TEXT,
     title TEXT,
