@@ -83,13 +83,12 @@ pub async fn patch_me(
 
     let user = sqlx::query!(
         r#"
-        INSERT INTO users (user_id, avatar_key, banner_key)
-        VALUES ($1, $2, $3)
-        ON CONFLICT (user_id) DO UPDATE SET
-            avatar_key = COALESCE(excluded.avatar_key, users.avatar_key),
-            banner_key = COALESCE(excluded.banner_key, users.banner_key),
+        UPDATE users SET
+            avatar_key = COALESCE($2, avatar_key),
+            banner_key = COALESCE($3, banner_key),
             updated_at = NOW()
-        RETURNING user_id, avatar_key, banner_key, created_at, updated_at
+        WHERE user_id = $1
+        RETURNING user_id, username, avatar_key, banner_key, created_at, updated_at
         "#,
         *user_id,
         body.avatar_key,
@@ -111,6 +110,7 @@ pub async fn patch_me(
 
     Ok(web::Json(UserResponse {
         user_id: user.user_id,
+        username: user.username,
         avatar_url,
         banner_url,
         created_at: user.created_at,

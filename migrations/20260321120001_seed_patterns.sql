@@ -1,9 +1,11 @@
+INSERT INTO users (user_id, username) VALUES ('26f29224-6001-702f-25dc-6d5c1b750f51', 'acid');
+
 INSERT INTO patterns_tb303 (
     pattern_id, user_id, name, author, title, description, triplets, tempo, waveform, tuning,
     cut_off_freq, resonance, env_mod, decay, accent, updated_at, created_at, is_public
 ) VALUES (
              'a8fcebd7-10cf-4bfb-a828-bbd27109e15e',
-             '0b3fd33f-b34b-47e7-9a08-3ac597874cde',
+             '26f29224-6001-702f-25dc-6d5c1b750f51',
              'Bam Bam - Where''s your child?',
              'Bam Bam',
              'Where''s your child?',
@@ -37,7 +39,7 @@ INSERT INTO patterns_tb303 (
     cut_off_freq, resonance, env_mod, decay, accent, updated_at, created_at, is_public
 ) VALUES (
              '8d9af141-1464-4484-9d45-693affcafe5b',
-             '0b3fd33f-b34b-47e7-9a08-3ac597874cde',
+             '26f29224-6001-702f-25dc-6d5c1b750f51',
              'Humanoid - Stakker humanoid',
              'Humanoid',
              'Stakker humanoid',
@@ -81,7 +83,7 @@ INSERT INTO patterns_tb303 (
     cut_off_freq, resonance, env_mod, decay, accent, updated_at, created_at, is_public
 ) VALUES (
              '53d4bc60-9b42-40bf-9d27-4bb16d07cc33',
-             '0b3fd33f-b34b-47e7-9a08-3ac597874cde',
+             '26f29224-6001-702f-25dc-6d5c1b750f51',
              'The Prodigy - Claustrophobic String',
              'The Prodigy',
              'Claustrophobic String',
@@ -117,7 +119,7 @@ INSERT INTO patterns_tb303 (
     cut_off_freq, resonance, env_mod, decay, accent, updated_at, created_at, is_public
 ) VALUES (
              'c922fdd1-9146-4a4b-9a18-e37ecd0c41da',
-             '0b3fd33f-b34b-47e7-9a08-3ac597874cde',
+             '26f29224-6001-702f-25dc-6d5c1b750f51',
              'A Guy Called Gerald - Voodoo Ray',
              'A Guy Called Gerald',
              'Voodoo Ray',

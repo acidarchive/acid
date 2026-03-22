@@ -34,21 +34,6 @@ impl ResponseError for GetUserError {
     }
 }
 
-async fn ensure_user_exists(pool: &PgPool, user_id: &UserId) -> Result<(), anyhow::Error> {
-    sqlx::query!(
-        r#"
-        INSERT INTO users (user_id)
-        VALUES ($1)
-        ON CONFLICT (user_id) DO NOTHING
-        "#,
-        **user_id
-    )
-    .execute(pool)
-    .await
-    .context("Failed to ensure user exists")?;
-    Ok(())
-}
-
 #[utoipa::path(
     get,
     path = "/v1/users/me",
@@ -69,11 +54,9 @@ pub async fn get_me(
 ) -> Result<web::Json<UserResponse>, GetUserError> {
     let user_id = user_id.into_inner();
 
-    ensure_user_exists(pool.as_ref(), &user_id).await?;
-
     let user = sqlx::query!(
         r#"
-        SELECT user_id, avatar_key, banner_key, created_at, updated_at
+        SELECT user_id, username, avatar_key, banner_key, created_at, updated_at
         FROM users
         WHERE user_id = $1
         "#,
@@ -95,6 +78,7 @@ pub async fn get_me(
 
     Ok(web::Json(UserResponse {
         user_id: user.user_id,
+        username: user.username,
         avatar_url,
         banner_url,
         created_at: user.created_at,
