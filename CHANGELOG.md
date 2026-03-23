@@ -1,4 +1,11 @@
 # 🎛️ Acid Archive Changelog
+## [0.0.1-alpha.17] - 2026-03-23
+
+### 🌀 Added
+
+- Add username field to users table
+
+
 ## [0.0.1-alpha.16] - 2026-03-17
 
 ### 🔧 Fixed
@@ -120,7 +127,8 @@
 - Init
 
 
-[0.0.1-alpha.16]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.15..0.0.1-alpha.16
+[0.0.1-alpha.17]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.16..0.0.1-alpha.17
+[0.0.1-alpha.16]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.15..v0.0.1-alpha.16
 [0.0.1-alpha.15]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.14..v0.0.1-alpha.15
 [0.0.1-alpha.14]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.13..v0.0.1-alpha.14
 [0.0.1-alpha.13]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.12..v0.0.1-alpha.13
