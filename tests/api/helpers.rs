@@ -160,9 +160,26 @@ impl TestApp {
         request.send().await.expect("Failed to execute request.")
     }
 
-    pub async fn list_public_patterns_tb303(&self) -> reqwest::Response {
+    pub async fn list_public_patterns_tb303(
+        &self,
+        limit: Option<i64>,
+        offset: Option<i64>,
+    ) -> reqwest::Response {
+        let mut url = format!("{}/v1/patterns/tb303/public", &self.address);
+
+        let mut params: Vec<String> = vec![];
+        if let Some(l) = limit {
+            params.push(format!("limit={l}"));
+        }
+        if let Some(o) = offset {
+            params.push(format!("offset={o}"));
+        }
+        if !params.is_empty() {
+            url = format!("{}?{}", url, params.join("&"));
+        }
+
         self.api_client
-            .get(format!("{}/v1/patterns/tb303/public", &self.address))
+            .get(url)
             .header("Content-Type", "application/json")
             .send()
             .await

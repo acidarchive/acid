@@ -127,3 +127,11 @@ pub struct TB303PatternSummary {
     #[schema(example = "2023-10-01T12:00:00Z")]
     pub updated_at: DateTime<Utc>,
 }
+
+#[derive(Serialize, ToSchema)]
+pub struct PaginatedTB303PatternSummary {
+    pub data: Vec<TB303PatternSummary>,
+    pub total: i64,
+    pub limit: i64,
+    pub offset: i64,
+}
