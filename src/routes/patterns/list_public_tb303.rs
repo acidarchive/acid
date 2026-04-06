@@ -1,10 +1,13 @@
 use crate::api::models::pagination::PaginationParams;
+use crate::api::models::sort::SortParams;
 use crate::api::models::tb303::{PaginatedTB303PatternSummary, TB303PatternSummary};
 use crate::routes::patterns::PatternErrorResponse;
 use crate::utils::error_chain_fmt;
 use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use anyhow::Context;
+use chrono::{DateTime, Utc};
 use sqlx::PgPool;
+use uuid::Uuid;
 
 #[derive(thiserror::Error)]
 pub enum ListPublicPatternsError {
@@ -30,10 +33,12 @@ pub enum ListPublicPatternsError {
 #[tracing::instrument(name = "Listing public TB303 patterns", skip(pool))]
 pub async fn list_public_tb303_patterns(
     pool: web::Data<PgPool>,
-    query: web::Query<PaginationParams>,
+    pagination: web::Query<PaginationParams>,
+    sort: web::Query<SortParams>,
 ) -> Result<web::Json<PaginatedTB303PatternSummary>, ListPublicPatternsError> {
-    let limit = query.limit.unwrap_or(20);
-    let offset = query.offset.unwrap_or(0);
+    let limit = pagination.limit.unwrap_or(20);
+    let offset = pagination.offset.unwrap_or(0);
+    let order = sort.order.as_deref().unwrap_or("desc").to_lowercase();
 
     if !(1..=100).contains(&limit) {
         return Err(ListPublicPatternsError::ValidationError(
@@ -45,18 +50,35 @@ pub async fn list_public_tb303_patterns(
             "offset must be 0 or greater".to_string(),
         ));
     }
+    if order != "asc" && order != "desc" {
+        return Err(ListPublicPatternsError::ValidationError(
+            "order must be \"asc\" or \"desc\"".to_string(),
+        ));
+    }
 
-    let response = fetch_public_pattern_list(&pool, limit, offset)
+    let response = fetch_public_pattern_list(&pool, limit, offset, &order)
         .await
         .context("Failed to fetch public patterns")?;
 
     Ok(web::Json(response))
 }
 
+#[derive(sqlx::FromRow)]
+struct PublicPatternRow {
+    pattern_id: Uuid,
+    name: String,
+    author: Option<String>,
+    title: Option<String>,
+    is_public: Option<bool>,
+    created_at: DateTime<Utc>,
+    updated_at: DateTime<Utc>,
+}
+
 async fn fetch_public_pattern_list(
     pool: &PgPool,
     limit: i64,
     offset: i64,
+    order: &str,
 ) -> Result<PaginatedTB303PatternSummary, sqlx::Error> {
     let total: i64 =
         sqlx::query_scalar!("SELECT COUNT(*) FROM patterns_tb303 WHERE is_public = true")
@@ -64,31 +86,32 @@ async fn fetch_public_pattern_list(
             .await?
             .unwrap_or(0);
 
-    let patterns = sqlx::query!(
-        r#"
-        SELECT
-            pattern_id, name, author, title, is_public, created_at, updated_at
-        FROM patterns_tb303
-        WHERE is_public = true
-        ORDER BY created_at DESC
-        LIMIT $1 OFFSET $2
-        "#,
-        limit,
-        offset
-    )
-    .fetch_all(pool)
-    .await?;
+    let mut builder = sqlx::QueryBuilder::new(
+        r#"SELECT pattern_id, name, author, title, is_public, created_at, updated_at
+                 FROM patterns_tb303
+                 WHERE is_public = true"#,
+    );
 
-    let data: Vec<TB303PatternSummary> = patterns
+    builder.push(" ORDER BY created_at ");
+    builder.push(if order == "asc" { "ASC" } else { "DESC" });
+    builder.push(" LIMIT ").push_bind(limit);
+    builder.push(" OFFSET ").push_bind(offset);
+
+    let rows = builder
+        .build_query_as::<PublicPatternRow>()
+        .fetch_all(pool)
+        .await?;
+
+    let data = rows
         .into_iter()
-        .map(|pattern| TB303PatternSummary {
-            pattern_id: pattern.pattern_id,
-            name: pattern.name,
-            author: pattern.author,
-            title: pattern.title,
-            is_public: pattern.is_public.unwrap(),
-            created_at: pattern.created_at,
-            updated_at: pattern.updated_at,
+        .map(|r| TB303PatternSummary {
+            pattern_id: r.pattern_id,
+            name: r.name,
+            author: r.author,
+            title: r.title,
+            is_public: r.is_public.unwrap(),
+            created_at: r.created_at,
+            updated_at: r.updated_at,
         })
         .collect();
 

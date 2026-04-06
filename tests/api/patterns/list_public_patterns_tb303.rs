@@ -4,7 +4,7 @@ use crate::helpers::spawn_app;
 async fn list_public_patterns_tb303_returns_200() {
     let app = spawn_app().await;
 
-    let response = app.list_public_patterns_tb303(None, None).await;
+    let response = app.list_public_patterns_tb303(None, None, None).await;
 
     assert_eq!(200, response.status().as_u16());
 }
@@ -13,7 +13,7 @@ async fn list_public_patterns_tb303_returns_200() {
 async fn list_public_patterns_tb303_returns_empty_array_when_no_patterns() {
     let app = spawn_app().await;
 
-    let response = app.list_public_patterns_tb303(None, None).await;
+    let response = app.list_public_patterns_tb303(None, None, None).await;
 
     assert_eq!(200, response.status().as_u16());
 
@@ -29,7 +29,7 @@ async fn list_public_patterns_tb303_returns_public_patterns() {
 
     app.create_test_patterns(&user_id, 2, Some(true)).await;
 
-    let response = app.list_public_patterns_tb303(None, None).await;
+    let response = app.list_public_patterns_tb303(None, None, None).await;
     let json = response.json::<serde_json::Value>().await.unwrap();
 
     assert_eq!(json["data"].as_array().unwrap().len(), 2);
@@ -43,7 +43,7 @@ async fn list_public_patterns_tb303_excludes_private_patterns() {
 
     app.create_test_patterns(&user_id, 2, Some(false)).await;
 
-    let response = app.list_public_patterns_tb303(None, None).await;
+    let response = app.list_public_patterns_tb303(None, None, None).await;
     let json = response.json::<serde_json::Value>().await.unwrap();
 
     assert_eq!(json["data"].as_array().unwrap().len(), 0);
@@ -60,7 +60,7 @@ async fn list_public_patterns_tb303_returns_patterns_from_multiple_users() {
     app.create_test_patterns(&other_user_id, 2, Some(true))
         .await;
 
-    let response = app.list_public_patterns_tb303(None, None).await;
+    let response = app.list_public_patterns_tb303(None, None, None).await;
     let json = response.json::<serde_json::Value>().await.unwrap();
 
     assert_eq!(json["data"].as_array().unwrap().len(), 3);
@@ -74,7 +74,7 @@ async fn list_public_patterns_tb303_sorts_by_created_at_desc() {
 
     app.create_test_patterns(&user_id, 3, Some(true)).await;
 
-    let response = app.list_public_patterns_tb303(None, None).await;
+    let response = app.list_public_patterns_tb303(None, None, None).await;
     let json = response.json::<serde_json::Value>().await.unwrap();
     let records = json["data"].as_array().unwrap();
 
@@ -90,7 +90,7 @@ async fn list_public_patterns_tb303_returns_correct_response_shape() {
 
     app.create_test_patterns(&user_id, 1, Some(true)).await;
 
-    let response = app.list_public_patterns_tb303(None, None).await;
+    let response = app.list_public_patterns_tb303(None, None, None).await;
     let json = response.json::<serde_json::Value>().await.unwrap();
 
     assert!(json.get("data").is_some());
@@ -113,7 +113,7 @@ async fn list_public_patterns_tb303_respects_limit() {
 
     app.create_test_patterns(&user_id, 5, Some(true)).await;
 
-    let response = app.list_public_patterns_tb303(Some(2), None).await;
+    let response = app.list_public_patterns_tb303(Some(2), None, None).await;
     let json = response.json::<serde_json::Value>().await.unwrap();
 
     assert_eq!(json["data"].as_array().unwrap().len(), 2);
@@ -129,7 +129,9 @@ async fn list_public_patterns_tb303_respects_offset() {
 
     app.create_test_patterns(&user_id, 3, Some(true)).await;
 
-    let response = app.list_public_patterns_tb303(Some(10), Some(2)).await;
+    let response = app
+        .list_public_patterns_tb303(Some(10), Some(2), None)
+        .await;
     let json = response.json::<serde_json::Value>().await.unwrap();
 
     assert_eq!(json["data"].as_array().unwrap().len(), 1);
@@ -144,7 +146,9 @@ async fn list_public_patterns_tb303_returns_empty_when_offset_beyond_total() {
 
     app.create_test_patterns(&user_id, 3, Some(true)).await;
 
-    let response = app.list_public_patterns_tb303(Some(10), Some(99)).await;
+    let response = app
+        .list_public_patterns_tb303(Some(10), Some(99), None)
+        .await;
     let json = response.json::<serde_json::Value>().await.unwrap();
 
     assert_eq!(json["data"].as_array().unwrap().len(), 0);
@@ -155,10 +159,10 @@ async fn list_public_patterns_tb303_returns_empty_when_offset_beyond_total() {
 async fn list_public_patterns_tb303_returns_400_for_invalid_limit() {
     let app = spawn_app().await;
 
-    let response = app.list_public_patterns_tb303(Some(0), None).await;
+    let response = app.list_public_patterns_tb303(Some(0), None, None).await;
     assert_eq!(400, response.status().as_u16());
 
-    let response = app.list_public_patterns_tb303(Some(101), None).await;
+    let response = app.list_public_patterns_tb303(Some(101), None, None).await;
     assert_eq!(400, response.status().as_u16());
 }
 
@@ -166,6 +170,34 @@ async fn list_public_patterns_tb303_returns_400_for_invalid_limit() {
 async fn list_public_patterns_tb303_returns_400_for_negative_offset() {
     let app = spawn_app().await;
 
-    let response = app.list_public_patterns_tb303(None, Some(-1)).await;
+    let response = app.list_public_patterns_tb303(None, Some(-1), None).await;
+    assert_eq!(400, response.status().as_u16());
+}
+
+#[tokio::test]
+async fn list_public_patterns_tb303_sorts_by_created_at_asc() {
+    let app = spawn_app().await;
+    let user_id = app.get_test_user_id().await;
+
+    app.create_test_patterns(&user_id, 3, Some(true)).await;
+
+    let response = app
+        .list_public_patterns_tb303(None, None, Some("asc"))
+        .await;
+    let json = response.json::<serde_json::Value>().await.unwrap();
+    let records = json["data"].as_array().unwrap();
+
+    assert_eq!(records[0]["title"], "Pattern 1");
+    assert_eq!(records[1]["title"], "Pattern 2");
+    assert_eq!(records[2]["title"], "Pattern 3");
+}
+
+#[tokio::test]
+async fn list_public_patterns_tb303_returns_400_for_invalid_order() {
+    let app = spawn_app().await;
+
+    let response = app
+        .list_public_patterns_tb303(None, None, Some("random"))
+        .await;
     assert_eq!(400, response.status().as_u16());
 }
