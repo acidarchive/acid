@@ -164,6 +164,7 @@ impl TestApp {
         &self,
         limit: Option<i64>,
         offset: Option<i64>,
+        order: Option<&str>,
     ) -> reqwest::Response {
         let mut url = format!("{}/v1/patterns/tb303/public", &self.address);
 
@@ -173,6 +174,9 @@ impl TestApp {
         }
         if let Some(o) = offset {
             params.push(format!("offset={o}"));
+        }
+        if let Some(ord) = order {
+            params.push(format!("order={ord}"));
         }
         if !params.is_empty() {
             url = format!("{}?{}", url, params.join("&"));
