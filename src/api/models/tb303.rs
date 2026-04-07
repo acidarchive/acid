@@ -129,8 +129,30 @@ pub struct TB303PatternSummary {
 }
 
 #[derive(Serialize, ToSchema)]
-pub struct PaginatedTB303PatternSummary {
-    pub data: Vec<TB303PatternSummary>,
+pub struct PublicTB303PatternSummary {
+    #[schema(example = "123e4567-e89b-12d3-a456-426614174000")]
+    pub pattern_id: Uuid,
+    #[schema(example = "First pattern")]
+    pub name: String,
+    #[schema(example = "Phuture")]
+    pub author: Option<String>,
+    #[schema(example = "Acid Trax")]
+    pub title: Option<String>,
+    #[schema(example = true)]
+    pub is_public: bool,
+    #[schema(example = "username")]
+    pub username: String,
+    #[schema(example = "https://bucket.s3.region.amazonaws.com/avatars/user-id")]
+    pub avatar_url: Option<String>,
+    #[schema(example = "2023-10-01T12:00:00Z")]
+    pub created_at: DateTime<Utc>,
+    #[schema(example = "2023-10-01T12:00:00Z")]
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct PaginatedPublicTB303PatternSummary {
+    pub data: Vec<PublicTB303PatternSummary>,
     pub total: i64,
     pub limit: i64,
     pub offset: i64,
