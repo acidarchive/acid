@@ -1,4 +1,17 @@
 # 🎛️ Acid Archive Changelog
+## [0.0.1-alpha.18] - 2026-04-07
+
+### 🌀 Added
+
+- Show avatar and username in public patter list
+
+- Order patterns by date
+
+- Public patter list pagination
+
+- Get public patterns
+
+
 ## [0.0.1-alpha.17] - 2026-03-23
 
 ### 🌀 Added
@@ -127,7 +140,8 @@
 - Init
 
 
-[0.0.1-alpha.17]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.16..0.0.1-alpha.17
+[0.0.1-alpha.18]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.17..0.0.1-alpha.18
+[0.0.1-alpha.17]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.16..v0.0.1-alpha.17
 [0.0.1-alpha.16]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.15..v0.0.1-alpha.16
 [0.0.1-alpha.15]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.14..v0.0.1-alpha.15
 [0.0.1-alpha.14]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.13..v0.0.1-alpha.14
