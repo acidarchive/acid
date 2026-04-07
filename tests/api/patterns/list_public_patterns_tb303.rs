@@ -104,6 +104,9 @@ async fn list_public_patterns_tb303_returns_correct_response_shape() {
     assert_eq!(record["is_public"], true);
     assert!(record.get("created_at").is_some());
     assert!(record.get("updated_at").is_some());
+    assert!(record.get("username").is_some());
+    assert!(record["username"].is_string());
+    assert!(record.get("avatar_url").is_some());
 }
 
 #[tokio::test]
