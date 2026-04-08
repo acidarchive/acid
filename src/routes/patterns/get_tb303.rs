@@ -1,8 +1,9 @@
 use crate::api::models::tb303::{TB303Pattern, TB303Step};
-use crate::authentication::UserId;
+use crate::authentication::{try_extract_user_id, UserId};
+use crate::configuration::CognitoSettings;
 use crate::routes::patterns::PatternErrorResponse;
 use crate::utils::error_chain_fmt;
-use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
+use actix_web::{http::StatusCode, web, HttpRequest, HttpResponse, ResponseError};
 use anyhow::Context;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -177,15 +178,16 @@ pub async fn get_random_tb303_pattern(
         ("token" = [])
     ),
 )]
-#[tracing::instrument(name = "Getting TB303 pattern by ID", skip(pool))]
+#[tracing::instrument(name = "Getting TB303 pattern by ID", skip(pool, cognito))]
 pub async fn get_tb303_pattern(
+    req: HttpRequest,
     pool: web::Data<PgPool>,
-    user_id: web::ReqData<UserId>,
+    cognito: web::Data<CognitoSettings>,
     pattern_id: web::Path<Uuid>,
 ) -> Result<web::Json<TB303Pattern>, GetPatternError> {
+    let user_id = try_extract_user_id(req.headers(), &cognito).await;
     let pattern_id = pattern_id.into_inner();
-    let user_id = user_id.into_inner();
 
-    let pattern = fetch_pattern_by_id(pool.as_ref(), pattern_id, Some(user_id)).await?;
+    let pattern = fetch_pattern_by_id(pool.as_ref(), pattern_id, user_id).await?;
     Ok(web::Json(pattern))
 }
