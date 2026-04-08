@@ -117,6 +117,29 @@ async fn get_decoding_key(
     Ok(decoding_key)
 }
 
+pub async fn try_extract_user_id(headers: &HeaderMap, cognito: &CognitoSettings) -> Option<UserId> {
+    let token = extract_token_from_header(headers).ok()?;
+    let kid = decode_header(token).ok()?.kid?;
+    let decoding_key = get_decoding_key(&kid, &cognito.region, &cognito.user_pool_id)
+        .await
+        .ok()?;
+
+    let mut validation = Validation::new(Algorithm::RS256);
+    validation.set_audience(std::slice::from_ref(&cognito.user_pool_client_id));
+    validation.set_issuer(&[format!(
+        "https://cognito-idp.{}.amazonaws.com/{}",
+        cognito.region, cognito.user_pool_id
+    )]);
+
+    let token_data = decode::<CognitoClaims>(token, &decoding_key, &validation).ok()?;
+
+    if token_data.claims.token_use != "id" {
+        return None;
+    }
+
+    Uuid::parse_str(&token_data.claims.sub).ok().map(UserId)
+}
+
 fn create_unauthorized_response() -> HttpResponse {
     let error_response = ErrorResponse {
         message: "Unauthorized access".to_string(),

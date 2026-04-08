@@ -82,15 +82,15 @@ async fn run(
                                 "/tb303/public",
                                 web::get().to(patterns::list_public_tb303_patterns),
                             )
+                            .route(
+                                "/tb303/{pattern_id}",
+                                web::get().to(patterns::get_tb303_pattern),
+                            )
                             .service(
                                 web::scope("")
                                     .wrap(from_fn(reject_unauthorized_users))
                                     .route("/tb303", web::post().to(patterns::create_tb303_pattern))
                                     .route("/tb303", web::get().to(patterns::list_tb303_patterns))
-                                    .route(
-                                        "/tb303/{pattern_id}",
-                                        web::get().to(patterns::get_tb303_pattern),
-                                    )
                                     .route(
                                         "/tb303/{pattern_id}",
                                         web::delete().to(patterns::delete_tb303_pattern),

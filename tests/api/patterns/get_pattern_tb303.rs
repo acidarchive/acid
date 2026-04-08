@@ -2,7 +2,7 @@ use crate::helpers::spawn_app;
 use uuid::Uuid;
 
 #[tokio::test]
-async fn get_pattern_tb303_returns_401_for_unauthorized_requests() {
+async fn get_pattern_tb303_returns_404_for_non_existent_pattern_without_auth() {
     // Arrange
     let app = spawn_app().await;
 
@@ -10,7 +10,40 @@ async fn get_pattern_tb303_returns_401_for_unauthorized_requests() {
     let response = app.get_pattern_tb303(&Uuid::new_v4(), None).await;
 
     // Assert
-    assert_eq!(401, response.status().as_u16());
+    assert_eq!(404, response.status().as_u16());
+}
+
+#[tokio::test]
+async fn get_pattern_tb303_returns_200_for_public_pattern_without_auth() {
+    // Arrange
+    let app = spawn_app().await;
+    let pattern_ids = app
+        .create_test_patterns(&Uuid::new_v4(), 1, Some(true))
+        .await;
+    let pattern_id = pattern_ids.first().expect("No patterns created");
+
+    // Act
+    let response = app.get_pattern_tb303(pattern_id, None).await;
+
+    // Assert
+    assert_eq!(200, response.status().as_u16());
+
+    let json = response.json::<serde_json::Value>().await.unwrap();
+    assert_eq!(json["title"], "Pattern 1");
+    assert_eq!(json["author"], "Author 1");
+}
+
+#[tokio::test]
+async fn get_pattern_tb303_returns_404_for_private_pattern_without_auth() {
+    let app = spawn_app().await;
+    let pattern_ids = app
+        .create_test_patterns(&Uuid::new_v4(), 1, Some(false))
+        .await;
+    let pattern_id = pattern_ids.first().expect("No patterns created");
+
+    let response = app.get_pattern_tb303(pattern_id, None).await;
+
+    assert_eq!(404, response.status().as_u16());
 }
 
 #[tokio::test]
