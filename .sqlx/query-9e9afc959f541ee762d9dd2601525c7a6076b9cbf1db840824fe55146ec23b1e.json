@@ -1,0 +1,70 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT\n            b.bar_id, b.number AS bar_number,\n            s.step_id AS \"step_id?\", s.number AS \"step_number?\",\n            s.note, s.transpose, s.time, s.accent, s.slide\n        FROM bars_tb303 b\n        LEFT JOIN steps_tb303 s ON s.bar_id = b.bar_id\n        WHERE b.pattern_id = $1\n        ORDER BY b.number, s.number\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "bar_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "bar_number",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "step_id?",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "step_number?",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "note",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "transpose",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "time",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "accent",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 8,
+        "name": "slide",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "9e9afc959f541ee762d9dd2601525c7a6076b9cbf1db840824fe55146ec23b1e"
+}

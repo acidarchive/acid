@@ -40,7 +40,7 @@ pub struct TB303Pattern {
     pub created_at: Option<DateTime<Utc>>,
     #[schema(example = "2023-10-01T12:00:00Z")]
     pub updated_at: Option<DateTime<Utc>>,
-    pub steps: Vec<TB303Step>,
+    pub bars: Vec<TB303Bar>,
 }
 
 #[derive(Serialize, ToSchema, Debug, Deserialize)]
@@ -73,7 +73,14 @@ pub struct CreateTB303Pattern {
     pub accent: Option<i32>,
     #[schema(example = true)]
     pub is_public: Option<bool>,
-    pub steps: Vec<CreateTB303Step>,
+    pub bars: Vec<CreateTB303Bar>,
+}
+
+#[derive(Serialize, ToSchema, Debug, Deserialize)]
+pub struct TB303Bar {
+    pub id: Uuid,
+    pub number: i32,
+    pub steps: Vec<TB303Step>,
 }
 
 #[derive(Serialize, ToSchema, Debug, Deserialize)]
@@ -108,6 +115,13 @@ pub struct CreateTB303Step {
     pub accent: Option<bool>,
     #[schema(example = false)]
     pub slide: Option<bool>,
+}
+
+#[derive(Serialize, ToSchema, Debug, Deserialize)]
+pub struct CreateTB303Bar {
+    #[schema(example = 1)]
+    pub number: i32,
+    pub steps: Vec<CreateTB303Step>,
 }
 
 #[derive(Serialize, sqlx::FromRow, Default, ToSchema)]

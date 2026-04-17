@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "DROP TABLE steps_tb303",
+  "query": "DROP TABLE bars_tb303 CASCADE",
   "describe": {
     "columns": [],
     "parameters": {
@@ -8,5 +8,5 @@
     },
     "nullable": []
   },
-  "hash": "ff4b0cda09647918e0aed427e12ba6a3aca2079521dce38ad09741893d476b50"
+  "hash": "d4cd3e49411458ed211274dec6fcf4e86bf444e8ab53a2f47efb72133266590b"
 }

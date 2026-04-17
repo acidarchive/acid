@@ -52,6 +52,8 @@ async fn get_patterns_tb303_random_returns_a_random_pattern() {
     assert_eq!(json["author"], "Humanoind");
     assert_eq!(json["waveform"], "sawtooth");
     assert_eq!(json["tempo"], 130);
-    assert!(json["steps"].is_array());
-    assert_eq!(json["steps"].as_array().unwrap().len(), 16);
+    let bars = json["bars"].as_array().unwrap();
+    assert_eq!(bars.len(), 1);
+    let steps = bars[0]["steps"].as_array().unwrap();
+    assert_eq!(steps.len(), 16);
 }

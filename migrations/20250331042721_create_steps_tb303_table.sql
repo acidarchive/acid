@@ -1,6 +1,6 @@
 CREATE TABLE steps_tb303(
     step_id uuid,
-    pattern_id uuid NOT NULL REFERENCES patterns_tb303 (pattern_id),
+    bar_id uuid NOT NULL REFERENCES bars_tb303(bar_id) ON DELETE CASCADE,
     number INTEGER NOT NULL,
     note TEXT,
     transpose TEXT,

@@ -1,4 +1,4 @@
-use crate::domain::{Author, Description, Knob, Name, NewTB303Step, Tempo, Title, Waveform};
+use crate::domain::{Author, Description, Knob, Name, NewTB303Bar, Tempo, Title, Waveform};
 
 pub struct NewTB303Pattern {
     pub name: Name,
@@ -15,5 +15,5 @@ pub struct NewTB303Pattern {
     pub decay: Option<Knob>,
     pub accent: Option<Knob>,
     pub is_public: Option<bool>,
-    pub steps: Vec<NewTB303Step>,
+    pub bars: Vec<NewTB303Bar>,
 }
