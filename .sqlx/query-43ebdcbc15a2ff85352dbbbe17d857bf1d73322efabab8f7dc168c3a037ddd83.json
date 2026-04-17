@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT COUNT(*) FROM steps_tb303 s\n         JOIN bars_tb303 b ON b.bar_id = s.bar_id\n         WHERE b.pattern_id = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "count",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "43ebdcbc15a2ff85352dbbbe17d857bf1d73322efabab8f7dc168c3a037ddd83"
+}

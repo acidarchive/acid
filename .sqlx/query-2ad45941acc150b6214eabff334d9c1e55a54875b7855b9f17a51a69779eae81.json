@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT number FROM bars_tb303 WHERE pattern_id = (SELECT pattern_id FROM patterns_tb303 LIMIT 1)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "number",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "2ad45941acc150b6214eabff334d9c1e55a54875b7855b9f17a51a69779eae81"
+}

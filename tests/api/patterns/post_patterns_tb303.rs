@@ -56,14 +56,25 @@ async fn post_pattern_tb303_persists_the_new_pattern() {
     assert_eq!(saved.is_public, Some(true));
 
     let saved_steps = sqlx::query!(
-        "SELECT pattern_id, number, note, transpose, time, accent, slide
-         FROM steps_tb303
-         WHERE pattern_id = (SELECT pattern_id FROM patterns_tb303 LIMIT 1)
-         ORDER BY number"
+        "SELECT s.number, s.note, s.transpose, s.time, s.accent, s.slide
+          FROM steps_tb303 s
+          JOIN bars_tb303 b ON b.bar_id = s.bar_id
+          WHERE b.pattern_id = (SELECT pattern_id FROM patterns_tb303 LIMIT 1)
+          ORDER BY b.number, s.number"
     )
     .fetch_all(&app.db_pool)
     .await
     .expect("Failed to fetch saved steps");
+
+    let saved_bars = sqlx::query!(
+        "SELECT number FROM bars_tb303 WHERE pattern_id = (SELECT pattern_id FROM patterns_tb303 LIMIT 1)"
+    )
+    .fetch_all(&app.db_pool)
+    .await
+    .expect("Failed to fetch saved bars");
+
+    assert_eq!(saved_bars.len(), 1);
+    assert_eq!(saved_bars[0].number, 1);
 
     assert_eq!(saved_steps.len(), 16);
 
@@ -98,21 +109,77 @@ async fn post_pattern_tb303_returns_400_for_invalid_data() {
         (
             r#"{
                 "name": "Test Pattern",
-                "steps": []
+                "bars": []
             }"#,
-            "Empty steps array",
+            "Empty bars array",
         ),
         (
             r#"{
                 "name": "Test Pattern",
             }"#,
-            "Missing steps array",
+            "Missing bars array",
+        ),
+        (
+            r#"{"name": "Test Pattern", "bars": [{"number": 1, "steps": []}]}"#,
+            "Empty steps in bar",
+        ),
+        (
+            r#"{
+                "name": "Test Pattern",
+                "bars": [
+                    {"number": 1, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 1, "steps": [{"number": 1, "time": "note", "note": "C"}]}
+                ]
+            }"#,
+            "Duplicate bar numbers",
+        ),
+        (
+            r#"{
+                "name": "Test Pattern",
+                "bars": [{"number": 2, "steps": [{"number": 1, "time": "note", "note": "C"}]}]
+            }"#,
+            "Bar sequence not starting at 1",
+        ),
+        (
+            r#"{
+                "name": "Test Pattern",
+                "bars": [
+                    {"number": 1, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 3, "steps": [{"number": 1, "time": "note", "note": "C"}]}
+                ]
+            }"#,
+            "Missing bar in sequence",
+        ),
+        (
+            r#"{
+                "name": "Test Pattern",
+                "bars": [
+                    {"number": 1, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 2, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 3, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 4, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 5, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 6, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 7, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 8, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 9, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 10, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 11, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 12, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 13, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 14, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 15, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 16, "steps": [{"number": 1, "time": "note", "note": "C"}]},
+                    {"number": 17, "steps": [{"number": 1, "time": "note", "note": "C"}]}
+                ]
+              }"#,
+            "Too many bars",
         ),
         (
             r#"{
                 "name": "Test Pattern",
                 "tempo": -10,
-                "steps": [{"number": 1, "time": "note", "note": "C"}]
+                "bars": [{"number": 1, "steps": [{"number": 1, "time": "note", "note": "C"}]}]
             }"#,
             "Negative tempo",
         ),
@@ -120,7 +187,7 @@ async fn post_pattern_tb303_returns_400_for_invalid_data() {
             r#"{
                 "name": "Test Pattern",
                 "tempo": 1000,
-                "steps": [{"number": 1, "time": "note", "note": "C"}]
+                "bars": [{"number": 1, "steps": [{"number": 1, "time": "note", "note": "C"}]}]
             }"#,
             "Tempo too high",
         ),
@@ -128,49 +195,49 @@ async fn post_pattern_tb303_returns_400_for_invalid_data() {
             r#"{
                 "name": "Test Pattern",
                 "waveform": "invalid_waveform",
-                "steps": [{"number": 1, "time": "note", "note": "C"}]
+                "bars": [{"number": 1, "steps": [{"number": 1, "time": "note", "note": "C"}]}]
             }"#,
             "Invalid waveform",
         ),
         (
             r#"{
                 "name": "Test Pattern",
-                "steps": [{"number": 0, "time": "note", "note": "C"}]
+                "bars": [{"number": 1, "steps": [{"number": 0, "time": "note", "note": "C"}]}]
             }"#,
             "Step number zero",
         ),
         (
             r#"{
                 "name": "Test Pattern",
-                "steps": [{"number": 17, "time": "note", "note": "C"}]
+                "bars": [{"number": 1, "steps": [{"number": 17, "time": "note", "note": "C"}]}]
             }"#,
             "Step number too high",
         ),
         (
             r#"{
                 "name": "Test Pattern",
-                "steps": [{"number": 1, "time": "note", "note": "H"}]
+                "bars": [{"number": 1, "steps": [{"number": 1, "time": "note", "note": "H"}]}]
             }"#,
             "Invalid note",
         ),
         (
             r#"{
                 "name": "Test Pattern",
-                "steps": [{"number": 1, "time": "note", "note": "C", "transpose": "way_up"}]
+                "bars": [{"number": 1, "steps": [{"number": 1, "time": "note", "note": "C", "transpose": "way_up"}]}]
             }"#,
             "Invalid transpose",
         ),
         (
             r#"{
                 "name": "Test Pattern",
-                "steps": [{"number": 1, "time": "invalid_time", "note": "C"}]
+                "bars": [{"number": 1, "steps": [{"number": 1, "time": "invalid_time", "note": "C"}]}]
             }"#,
             "Invalid time",
         ),
         (
             r#"{
                 "name": "Test Pattern",
-                "steps": [{"number": 1, "note": "C"}]
+                "bars": [{"number": 1, "steps": [{"number": 1, "note": "C"}]}]
             }"#,
             "Missing time field",
         ),
@@ -178,7 +245,7 @@ async fn post_pattern_tb303_returns_400_for_invalid_data() {
             r#"{
                 "name": "Test Pattern",
                 "cut_off_freq": 361,
-                "steps": [{"number": 1, "time": "note", "note": "C"}]
+                "bars": [{"number": 1, "steps": [{"number": 1, "time": "note", "note": "C"}]}]
             }"#,
             "cut_off_freq out of range",
         ),
@@ -186,16 +253,21 @@ async fn post_pattern_tb303_returns_400_for_invalid_data() {
             r#"{
                 "name": "Test Pattern",
                 "resonance": -5,
-                "steps": [{"number": 1, "time": "note", "note": "C"}]
+                "bars": [{"number": 1, "steps": [{"number": 1, "time": "note", "note": "C"}]}]
             }"#,
             "resonance out of range",
         ),
         (
             r#"{
                 "name": "Test Pattern",
-                "steps": [
-                    {"number": 1, "time": "note", "note": "C"},
-                    {"number": 1, "time": "note", "note": "D"}
+                "bars": [
+                    {
+                        "number": 1,
+                        "steps": [
+                            {"number": 1, "time": "note", "note": "C"},
+                            {"number": 1, "time": "note", "note": "D"}
+                        ]
+                    }
                 ]
             }"#,
             "Duplicate step numbers",
@@ -203,9 +275,14 @@ async fn post_pattern_tb303_returns_400_for_invalid_data() {
         (
             r#"{
                 "name": "Test Pattern",
-                "steps": [
-                    {"number": 1, "time": "note", "note": "C"},
-                    {"number": 3, "time": "note", "note": "D"}
+                "bars": [
+                    {
+                        "number": 1,
+                        "steps": [
+                            {"number": 1, "time": "note", "note": "C"},
+                            {"number": 3, "time": "note", "note": "D"}
+                        ]
+                    }
                 ]
             }"#,
             "Missing step in sequence",
@@ -213,8 +290,13 @@ async fn post_pattern_tb303_returns_400_for_invalid_data() {
         (
             r#"{
                 "name": "Test Pattern",
-                "steps": [
-                    {"number": 1, "time": "rest", "note": "C"}
+                "bars": [
+                    {
+                        "number": 1,
+                        "steps": [
+                            {"number": 1, "time": "rest", "note": "C"}
+                        ]
+                    }
                 ]
             }"#,
             "Rest step with note",
@@ -222,8 +304,13 @@ async fn post_pattern_tb303_returns_400_for_invalid_data() {
         (
             r#"{
                 "name": "Test Pattern",
-                "steps": [
-                    {"number": 1, "time": "rest", "transpose": "up"}
+                "bars": [
+                    {
+                        "number": 1,
+                        "steps": [
+                            {"number": 1, "time": "rest", "transpose": "up"}
+                        ]
+                    }
                 ]
             }"#,
             "Rest step with transpose",
@@ -253,7 +340,7 @@ async fn post_pattern_tb303_fails_if_there_is_a_fatal_database_error() {
     let app = spawn_app().await;
 
     // destroy the database
-    sqlx::query!("DROP TABLE steps_tb303",)
+    sqlx::query!("DROP TABLE bars_tb303 CASCADE",)
         .execute(&app.db_pool)
         .await
         .unwrap();

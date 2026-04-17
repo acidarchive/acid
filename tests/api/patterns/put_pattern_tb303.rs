@@ -50,6 +50,31 @@ async fn put_pattern_tb303_updates_existing_pattern() {
 
     let json = response.json::<serde_json::Value>().await.unwrap();
     assert_eq!(json["data"]["id"], pattern_id.to_string());
+
+    let saved = sqlx::query!(
+        "SELECT name, author, title, tempo, is_public FROM patterns_tb303 WHERE pattern_id = $1",
+        pattern_id
+    )
+    .fetch_one(&app.db_pool)
+    .await
+    .expect("Failed to fetch updated pattern");
+
+    assert_eq!(saved.name, "Pattern 1");
+    assert_eq!(saved.author, Some("Humanoind".to_string()));
+    assert_eq!(saved.title, Some("Stakker humanoid".to_string()));
+    assert_eq!(saved.tempo, Some(130));
+    assert_eq!(saved.is_public, Some(false));
+
+    let saved_bars = sqlx::query!(
+        "SELECT number FROM bars_tb303 WHERE pattern_id = $1",
+        pattern_id
+    )
+    .fetch_all(&app.db_pool)
+    .await
+    .expect("Failed to fetch updated bars");
+
+    assert_eq!(saved_bars.len(), 1);
+    assert_eq!(saved_bars[0].number, 1);
 }
 
 #[tokio::test]
@@ -85,8 +110,13 @@ async fn put_pattern_tb303_returns_400_for_invalid_data() {
 
     let body = r#"{
         "name": "Invalid Pattern",
-        "steps": [
-            {"number": 1, "time": "invalid_time", "note": "C"}
+        "bars":[
+            {
+                "number": 1,
+                "steps": [
+                    {"number": 1, "time": "invalid_time", "note": "C"}
+                ]
+            }
         ]
     }"#
     .to_string();
@@ -109,7 +139,7 @@ async fn put_pattern_tb303_fails_if_there_is_a_fatal_database_error() {
     let pattern_id = pattern_ids.first().expect("No patterns created");
 
     // destroy the database
-    sqlx::query!("DROP TABLE steps_tb303",)
+    sqlx::query!("DROP TABLE bars_tb303 CASCADE",)
         .execute(&app.db_pool)
         .await
         .unwrap();

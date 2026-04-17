@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "DELETE FROM steps_tb303 WHERE pattern_id = $1",
+  "query": "DELETE FROM bars_tb303 WHERE pattern_id = $1",
   "describe": {
     "columns": [],
     "parameters": {
@@ -10,5 +10,5 @@
     },
     "nullable": []
   },
-  "hash": "f2d75fae155828560c059aff0b8c275e934cbe9d9c5cb8bfcbcf0d3310d0bc18"
+  "hash": "ba860bf6627492bb99026d9ee90c3b5fa19d6e111ffc8f6773f4afc3a11d014f"
 }

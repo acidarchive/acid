@@ -1,7 +1,8 @@
 use crate::api::models::tb303::CreateTB303Pattern;
 use crate::authentication::UserId;
 use crate::domain::{
-    Author, Description, Knob, Name, NewTB303Pattern, NewTB303Step, StepNumber, Tempo, Title,
+    Author, Description, Knob, Name, NewTB303Bar, NewTB303Pattern, NewTB303Step, StepNumber, Tempo,
+    Title,
 };
 use crate::routes::patterns::PatternErrorResponse;
 use crate::utils::error_chain_fmt;
@@ -9,6 +10,7 @@ use actix_web::{http::StatusCode, web, HttpResponse, ResponseError};
 use anyhow::Context;
 use chrono::Utc;
 use sqlx::{Executor, PgPool, Postgres, QueryBuilder, Transaction};
+use std::collections::HashSet;
 use std::convert::TryInto;
 use std::ops::Deref;
 use utoipa::ToSchema;
@@ -71,68 +73,116 @@ impl TryInto<NewTB303Pattern> for CreateTB303Pattern {
         let accent = parse_optional(self.accent, Knob::parse)?;
         let is_public = self.is_public;
 
-        if self.steps.is_empty() {
+        if self.bars.is_empty() {
             return Err("Pattern must contain at least one step.".to_string());
         }
+        if self.bars.len() > 16 {
+            return Err("Pattern can only have up to 16 bars".to_string());
+        }
 
-        let steps: Result<Vec<NewTB303Step>, String> = self
-            .steps
-            .into_iter()
-            .map(|step| {
-                let time = step.time;
-                let note = step.note;
-                let transpose = step.transpose;
-
-                if time.as_ref() == "rest" && (note.is_some() || transpose.is_some()) {
-                    return Err(format!(
-                        "Step {} is marked as 'rest' contains a note or octave.",
-                        step.number
-                    ));
-                }
-
-                Ok(NewTB303Step {
-                    number: StepNumber::parse(step.number).map_err(|e| e.to_string())?,
-                    note,
-                    transpose,
-                    time,
-                    accent: step.accent,
-                    slide: step.slide,
-                })
-            })
-            .collect();
-
-        let steps = steps?;
-
-        let mut seen_numbers = std::collections::HashSet::new();
-        for step in &steps {
-            if !seen_numbers.insert(step.number.as_ref()) {
-                return Err(format!("Duplicate step number: {}", step.number.as_ref()));
+        let mut seen_bar_numbers = HashSet::new();
+        for bar in &self.bars {
+            if !seen_bar_numbers.insert(bar.number) {
+                return Err(format!("Duplicate bar number: {}", bar.number));
             }
         }
 
-        let mut step_numbers: Vec<i32> = steps.iter().map(|step| *step.number.as_ref()).collect();
-        step_numbers.sort();
+        let mut bar_numbers: Vec<i32> = self.bars.iter().map(|b| b.number).collect();
+        bar_numbers.sort();
 
-        if step_numbers[0] != 1 {
-            return Err("Step sequence must start with 1".to_string());
+        if bar_numbers[0] != 1 {
+            return Err("Bar sequence must start with 1".to_string());
         }
 
-        for i in 1..step_numbers.len() {
-            if step_numbers[i] != step_numbers[i - 1] + 1 {
+        for i in 1..bar_numbers.len() {
+            if bar_numbers[i] != bar_numbers[i - 1] + 1 {
                 return Err(format!(
-                    "Missing step in sequence: expected {}, found {}",
-                    step_numbers[i - 1] + 1,
-                    step_numbers[i]
+                    "Missing bar in sequence: expected {}, found {}",
+                    bar_numbers[i - 1] + 1,
+                    bar_numbers[i]
                 ));
             }
         }
 
-        if steps.is_empty() {
-            return Err("A pattern must have at least one step.".to_string());
-        }
-        if steps.len() > 16 {
-            return Err("A pattern can only have up to 16 steps.".to_string());
-        }
+        let bars: Result<Vec<NewTB303Bar>, String> = self
+            .bars
+            .into_iter()
+            .map(|bar| {
+                let bar_number = bar.number;
+
+                if bar.steps.is_empty() {
+                    return Err(format!(
+                        "Bar {} must contain at least one step.",
+                        bar_number
+                    ));
+                }
+                if bar.steps.len() > 16 {
+                    return Err(format!("Bar {} can only have up to 16 steps.", bar_number));
+                }
+
+                let steps: Result<Vec<NewTB303Step>, String> = bar
+                    .steps
+                    .into_iter()
+                    .map(|step| {
+                        if step.time.as_ref() == "rest"
+                            && (step.note.is_some() || step.transpose.is_some())
+                        {
+                            return Err(format!(
+                                "Step {} is marked as 'rest' but contains a note or octave.",
+                                step.number
+                            ));
+                        }
+                        Ok(NewTB303Step {
+                            number: StepNumber::parse(step.number).map_err(|e| e.to_string())?,
+                            note: step.note,
+                            transpose: step.transpose,
+                            time: step.time,
+                            accent: step.accent,
+                            slide: step.slide,
+                        })
+                    })
+                    .collect();
+
+                let steps = steps?;
+
+                let mut seen_step_numbers = HashSet::new();
+                for step in &steps {
+                    if !seen_step_numbers.insert(step.number.as_ref()) {
+                        return Err(format!(
+                            "Duplicate step number in bar {}: {}",
+                            bar_number,
+                            step.number.as_ref()
+                        ));
+                    }
+                }
+
+                let mut step_numbers: Vec<i32> = steps.iter().map(|s| *s.number.as_ref()).collect();
+                step_numbers.sort();
+
+                if step_numbers[0] != 1 {
+                    return Err(format!(
+                        "Bar {}: step sequence must start with 1",
+                        bar_number
+                    ));
+                }
+                for i in 1..step_numbers.len() {
+                    if step_numbers[i] != step_numbers[i - 1] + 1 {
+                        return Err(format!(
+                            "Bar {}: missing step in sequence: expected {}, found {}",
+                            bar_number,
+                            step_numbers[i - 1] + 1,
+                            step_numbers[i]
+                        ));
+                    }
+                }
+                Ok(NewTB303Bar {
+                    number: bar_number,
+                    steps,
+                })
+            })
+            .collect();
+
+        let bars = bars?;
 
         Ok(NewTB303Pattern {
             name,
@@ -149,7 +199,7 @@ impl TryInto<NewTB303Pattern> for CreateTB303Pattern {
             decay,
             accent,
             is_public,
-            steps,
+            bars,
         })
     }
 }
@@ -160,7 +210,7 @@ impl TryInto<NewTB303Pattern> for CreateTB303Pattern {
 )]
 pub async fn insert_steps_tb303(
     transaction: &mut Transaction<'_, Postgres>,
-    pattern_id: Uuid,
+    bar_id: Uuid,
     steps: &[NewTB303Step],
 ) -> Result<(), sqlx::Error> {
     if steps.is_empty() {
@@ -168,13 +218,13 @@ pub async fn insert_steps_tb303(
     }
 
     let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(
-        "INSERT INTO steps_tb303 (step_id, pattern_id, number, note, transpose, time, accent, slide, created_at) ",
+        "INSERT INTO steps_tb303 (step_id, bar_id, number, note, transpose, time, accent, slide, created_at) ",
     );
 
     query_builder.push_values(steps, |mut b, step| {
         let now = Utc::now();
         b.push_bind(Uuid::new_v4())
-            .push_bind(pattern_id)
+            .push_bind(bar_id)
             .push_bind(*step.number.as_ref())
             .push_bind(step.note.as_ref().map(|n| n.as_ref()))
             .push_bind(step.transpose.as_ref().map(|s| s.as_ref()))
@@ -185,6 +235,32 @@ pub async fn insert_steps_tb303(
     });
 
     query_builder.build().execute(&mut **transaction).await?;
+
+    Ok(())
+}
+
+pub async fn insert_bars_tb303(
+    transaction: &mut Transaction<'_, Postgres>,
+    pattern_id: Uuid,
+    bars: &[NewTB303Bar],
+) -> Result<(), sqlx::Error> {
+    let bar_ids: Vec<Uuid> = bars.iter().map(|_| Uuid::new_v4()).collect();
+
+    let mut query_builder: QueryBuilder<Postgres> =
+        QueryBuilder::new("INSERT INTO bars_tb303 (bar_id, pattern_id, number, created_at) ");
+
+    query_builder.push_values(bars.iter().zip(bar_ids.iter()), |mut b, (bar, bar_id)| {
+        b.push_bind(bar_id)
+            .push_bind(pattern_id)
+            .push_bind(bar.number)
+            .push_bind(Utc::now());
+    });
+
+    query_builder.build().execute(&mut **transaction).await?;
+
+    for (bar, bar_id) in bars.iter().zip(bar_ids.iter()) {
+        insert_steps_tb303(transaction, *bar_id, &bar.steps).await?;
+    }
 
     Ok(())
 }
@@ -227,9 +303,9 @@ pub async fn create_tb303_pattern(
         .await
         .context("Failed to insert new pattern in the database.")?;
 
-    insert_steps_tb303(&mut transaction, pattern_id, &new_pattern.steps)
+    insert_bars_tb303(&mut transaction, pattern_id, &new_pattern.bars)
         .await
-        .context("Failed to insert new pattern steps in the database.")?;
+        .context("Failed to insert new pattern bars and steps.")?;
 
     transaction
         .commit()
@@ -361,16 +437,16 @@ pub async fn update_tb303_pattern(
     .context("Failed to update the pattern")?;
 
     sqlx::query!(
-        r#"DELETE FROM steps_tb303 WHERE pattern_id = $1"#,
+        r#"DELETE FROM bars_tb303 WHERE pattern_id = $1"#,
         pattern_id
     )
     .execute(&mut *transaction)
     .await
-    .context("Failed to delete old steps")?;
+    .context("Failed to delete old bars")?;
 
-    insert_steps_tb303(&mut transaction, pattern_id, &new_pattern.steps)
+    insert_bars_tb303(&mut transaction, pattern_id, &new_pattern.bars)
         .await
-        .context("Failed to insert updated steps")?;
+        .context("Failed to insert updated bars")?;
 
     transaction
         .commit()

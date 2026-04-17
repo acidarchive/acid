@@ -1,5 +1,6 @@
 use crate::api::models::tb303::{
-    PaginatedPublicTB303PatternSummary, PublicTB303PatternSummary, TB303Pattern, TB303Step,
+    PaginatedPublicTB303PatternSummary, PublicTB303PatternSummary, TB303Bar, TB303Pattern,
+    TB303Step,
 };
 use crate::api::models::uploads::{PresignRequest, PresignResponse};
 use crate::api::models::users::{UpdateUserRequest, UserResponse};
@@ -44,6 +45,7 @@ impl Modify for SecurityAddon {
     components(
         schemas(
             TB303Pattern,
+            TB303Bar,
             TB303Step,
             PaginatedPublicTB303PatternSummary,
             PublicTB303PatternSummary,

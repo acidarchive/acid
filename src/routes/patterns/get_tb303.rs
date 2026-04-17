@@ -1,4 +1,4 @@
-use crate::api::models::tb303::{TB303Pattern, TB303Step};
+use crate::api::models::tb303::{TB303Bar, TB303Pattern, TB303Step};
 use crate::authentication::{try_extract_user_id, UserId};
 use crate::configuration::CognitoSettings;
 use crate::routes::patterns::PatternErrorResponse;
@@ -78,32 +78,45 @@ async fn fetch_pattern_by_id(
         }
     }
 
-    let steps = sqlx::query!(
+    let rows = sqlx::query!(
         r#"
         SELECT
-            step_id, pattern_id, number, note, transpose, "time", accent, slide
-        FROM steps_tb303
-        WHERE pattern_id = $1
-        ORDER BY number
+            b.bar_id, b.number AS bar_number,
+            s.step_id AS "step_id?", s.number AS "step_number?",
+            s.note, s.transpose, s.time, s.accent, s.slide
+        FROM bars_tb303 b
+        LEFT JOIN steps_tb303 s ON s.bar_id = b.bar_id
+        WHERE b.pattern_id = $1
+        ORDER BY b.number, s.number
         "#,
         pattern_id
     )
     .fetch_all(pool)
     .await
-    .context("Failed to fetch steps for pattern.")?;
+    .context("Failed to fetch bars and steps for pattern.")?;
 
-    let steps_response: Vec<TB303Step> = steps
-        .into_iter()
-        .map(|step| TB303Step {
-            id: step.step_id,
-            number: step.number,
-            note: step.note,
-            transpose: step.transpose,
-            time: step.time,
-            accent: step.accent,
-            slide: step.slide,
-        })
-        .collect();
+    let mut bars: Vec<TB303Bar> = Vec::new();
+
+    for row in rows {
+        if bars.last().map(|b: &TB303Bar| b.id) != Some(row.bar_id) {
+            bars.push(TB303Bar {
+                id: row.bar_id,
+                number: row.bar_number,
+                steps: Vec::new(),
+            });
+        }
+        if let Some(step_id) = row.step_id {
+            bars.last_mut().unwrap().steps.push(TB303Step {
+                id: step_id,
+                number: row.step_number.unwrap(),
+                note: row.note,
+                transpose: row.transpose,
+                time: row.time,
+                accent: row.accent,
+                slide: row.slide,
+            });
+        }
+    }
 
     Ok(TB303Pattern {
         id: Some(pattern.pattern_id),
@@ -123,7 +136,7 @@ async fn fetch_pattern_by_id(
         created_at: Some(pattern.created_at),
         updated_at: Some(pattern.updated_at),
         is_public: pattern.is_public,
-        steps: steps_response,
+        bars,
     })
 }
 

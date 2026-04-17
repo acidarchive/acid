@@ -91,16 +91,6 @@ async fn delete_pattern_by_id(
         .await
         .context("Failed to begin a database transaction.")?;
 
-    sqlx::query!(
-        r#"
-        DELETE FROM steps_tb303 WHERE pattern_id = $1
-        "#,
-        pattern_id
-    )
-    .execute(&mut *transaction)
-    .await
-    .context("Failed to delete steps for pattern.")?;
-
     let result = sqlx::query!(
         r#"
         DELETE FROM patterns_tb303 WHERE pattern_id = $1 AND user_id = $2
