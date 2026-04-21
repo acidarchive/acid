@@ -1,4 +1,11 @@
 # 🎛️ Acid Archive Changelog
+## [0.0.1-alpha.21] - 2026-04-21
+
+### 🔧 Fixed
+
+- Increase json payload limit
+
+
 ## [0.0.1-alpha.20] - 2026-04-19
 
 ### 🌀 Added
@@ -154,7 +161,8 @@
 - Init
 
 
-[0.0.1-alpha.20]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.19..0.0.1-alpha.20
+[0.0.1-alpha.21]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.20..0.0.1-alpha.21
+[0.0.1-alpha.20]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.19..v0.0.1-alpha.20
 [0.0.1-alpha.19]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.18..v0.0.1-alpha.19
 [0.0.1-alpha.18]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.17..v0.0.1-alpha.18
 [0.0.1-alpha.17]: https://github.com/acidarchive/acid/compare/v0.0.1-alpha.16..v0.0.1-alpha.17
