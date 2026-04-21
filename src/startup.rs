@@ -137,10 +137,10 @@ pub struct ApiError;
 
 impl ApiError {
     pub fn json_error(cfg: JsonConfig) -> JsonConfig {
-        cfg.limit(4096)
+        cfg.limit(1024 * 1024)
             .error_handler(|err: JsonPayloadError, _req| {
                 let error = err.to_string();
-                let slice = &error[..error.find(" at").unwrap()];
+                let slice = &error[..error.find(" at").unwrap_or(error.len())];
 
                 // create custom error response
                 error::InternalError::from_response(
